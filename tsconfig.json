@@ -1,0 +1,41 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"useDefineForClassFields": true,
+		"module": "ES2022",
+		"lib": [
+			"ESNext",
+			"WebWorker",
+			"DOM",
+			"ES2022.Array",
+			"es2022"
+		],
+		"moduleResolution": "Node",
+		"strict": true,
+		"sourceMap": true,
+		"resolveJsonModule": true,
+		"baseUrl": "./src",
+		"noEmit": true,
+		"allowJs": true,
+		"rootDir": ".",
+		"declaration": true,
+		"declarationDir": "dist",
+		"esModuleInterop": true,
+		"downlevelIteration": true,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"noImplicitReturns": true,
+		"skipLibCheck": true,
+		"types": [
+			"node"
+		],
+	},
+	"include": [
+		"src/**/*.ts"
+	],
+	"exclude": [
+		"node_modules/**/*",
+		"dist/*",
+		"./index.ts"
+	]
+}
