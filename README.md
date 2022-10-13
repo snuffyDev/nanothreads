@@ -1,38 +1,35 @@
-# nanothread
+# nanothreads
 
 > a tiny cross-platform Worker & concurrency library
 
 Yet another Worker and concurrency library. What makes this one any different from the others? It's tiny, it's straight forward.
 
+Works both in the browser and in Node.js!
+
 ## Install
 
 ```sh
-npm  install --save  nanothread    // npm
-pnpm install --save  nanothread    // pnpm
-yarn add             nanothread    // yarn
+npm  install --save  nanothreads    // npm
+pnpm install --save  nanothreads    // pnpm
+yarn add             nanothreads    // yarn
 ```
 
 And then use!
 
 ```ts
-import { Mutex, thread } from "nanothread";
+import { Mutex, thread } from "nanothreads";
 
 // Create a thread handle
-const handle = thread<string>().spawn((args) => {
-	return new Promise<string>(res => {
-		// pretend this is an intensive task
-		setTimeout(()=>{
-			res(args + " | " + args.split("").reverse().join(""))
-		}, 1500)
-	})
+const handle = thread().spawn((url) => {
+  return fetch(url)
+  .then((response) => response.json())
 });
 
 // Pass on some data to the thread
-const thread_response = handle.spawn("See you on the other side!");
+const thread_response = await handle.send("https://api.kanye.rest/");
 
-// logs `[200, "See you on the other side! | !edis rehto eht no uoy eeS"]`
-// 200 means everything was okay when running the function!
-console.log(await thread_response.join())
+// Logs: '{"quote": "Man... whatever happened to my antique fish tank?"'
+console.log(thread_response)
 
 
 // Use a Mutex to limit concurrent function calls!
@@ -41,16 +38,15 @@ const lock = new Mutex();
 
 const http = async (url: string) => {
 	return await lock.dispatch(async () => {
-		return await fetch(url).then((response) => response.json())
+		return await fetch(url).then((response) => response.text())
 	});
 }
 
 // this will log one quote from the api at a time
 
 for (let i = 0; i < 15; i++) {
-	http("https://api.kanye.rest/").then(({ quote }) => {
-		// Logs the quote
-		console.log(quote);
+	http("https://example.com/").then((res) => {
+		// ...
 	})
 }
 

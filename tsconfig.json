@@ -22,6 +22,8 @@
 		"declarationDir": "dist",
 		"esModuleInterop": true,
 		"downlevelIteration": true,
+		"importsNotUsedAsValues": "preserve",
+		"preserveValueImports": false,
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noImplicitReturns": true,
@@ -32,7 +34,9 @@
 	},
 	"include": [
 		"src/**/*.ts"
-	],
+,
+"src/internals/NodeWorker.ts"
+],
 	"exclude": [
 		"node_modules/**/*",
 		"dist/*",

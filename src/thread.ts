@@ -1,69 +1,67 @@
-import { ThreadDataFn } from "models/thread";
-import { WorkerThread, WorkerThreadFn, StatusCode, Thread } from "./models";
+import { Worker as NodeWorker } from "./internals/NodeWorker.js";
 
-const TEMPLATE_BROWSER = [
-	"const res = [];",
-	"onmessage = async (event) => {",
-	"const res = await ($1)(event.data);",
-	"postMessage(res);",
-	"};",
-];
+import { StatusCode } from "./models";
+import type { ThreadBuilder } from "./models/thread";
 
-function spawn<A = unknown>(
-	func: WorkerThreadFn<A>,
-	once = false,
-): ThreadDataFn<A> {
-	const name = crypto.randomUUID();
+const browser = typeof navigator !== "undefined" && typeof window !== "undefined";
 
-	if (typeof func !== "function") throw new Error("Invalid parameter `func`, expecting 'function' got " + typeof func);
+const TEMPLATE_NODE = `const { parentPort } = require('worker_threads');
+	(async ({data}) => {
+	const res = await ($1)(data);
+	parentPort.postMessage({ data: res, status: 200 });
+	})();`;
 
-	let func_str = func.toString();
+const TEMPLATE_BROWSER = `const res = [];
+    onmessage = async (event) => {
+        const res = await ($1)(event.data);
+        postMessage(res);
+    };`;
 
-	func_str = TEMPLATE_BROWSER.join("\n").replace("$1", func_str);
+const Worker = (browser ? window.Worker : NodeWorker) as typeof NodeWorker;
 
-	return function (data: Partial<A> | undefined) {
-		const worker_blob = new Blob([func_str], { type: "text/javascript" });
+function receive<A>({ data }: { data: A }): A {
+	return data;
+}
 
-		const worker_url = URL.createObjectURL(worker_blob as Blob);
+export function thread(): ThreadBuilder {
+	return {
+		spawn(func, opts = {}) {
+			if (typeof func !== "function")
+				throw new Error("Invalid parameter `func`, expecting 'function' got " + typeof func);
 
-		const worker_thread = new Worker(worker_url as string, { name });
+			let func_str = func.toString();
+			func_str = (browser ? TEMPLATE_BROWSER : TEMPLATE_NODE).replace("$1", func_str);
 
-		function receive({ data }: { data: A }): [StatusCode, A] {
-			return [StatusCode.OK, data];
-		}
+			const src = browser ? URL.createObjectURL(new Blob([func_str], { type: "text/javascript" })) : func_str;
 
-		function terminate() {
-			if ("onmessage" in worker_thread) {
-				worker_thread.onmessage = null;
+			const options = !browser ? { eval: true } : {};
+			const worker = new Worker(src, options);
+			async function terminate() {
+				worker.terminate();
+				if (browser) {
+					URL.revokeObjectURL(src);
+				}
+				return new Promise<StatusCode>((res) => {
+					res(StatusCode.TERMINATED);
+				});
 			}
 
-			if (worker_url) URL.revokeObjectURL(worker_url);
-
-			worker_thread.terminate();
-			return StatusCode.TERMINATED;
-		}
-		return {
-			join() {
-				return new Promise<[StatusCode, A]>((res) => {
-					if ("onmessage" in worker_thread) {
-						worker_thread.onmessage = (ev) => {
-							terminate();
-							res(receive(ev));
-						};
-					}
-					worker_thread.postMessage(data);
-				});
-			},
-			terminate,
-		};
+			return {
+				send(data) {
+					return new Promise((resolve, reject) => {
+						worker.addEventListener(
+							"message",
+							(data) => {
+								resolve(receive(data));
+								if (opts.once) terminate();
+							},
+							{ once: true },
+						);
+						worker.postMessage(data);
+					});
+				},
+				terminate,
+			};
+		},
 	};
 }
-
-export function thread<T>(): WorkerThread<T> {
-	return {
-		spawn,
-		spawnOnce: (func) => spawn(func, true),
-	};
-}
-
-thread().spawnOnce(() => {});

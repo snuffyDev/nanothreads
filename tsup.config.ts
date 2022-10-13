@@ -5,21 +5,29 @@ export default defineConfig({
 	keepNames: true,
 	dts: true,
 	external: ["node:worker_threads", "worker_threads", "https"],
-	format: ["esm","cjs"],
-	bundle: false,
-	esbuildOptions(opts) {
-		(opts.platform = "neutral"), (opts.external = ["node:worker_threads", "worker_threads", "https"]);
+	bundle: true,
+	format: ["cjs", "esm"],
+	esbuildOptions(opts, { format }) {
+		opts.external =
+			format === "esm"
+				? ["node:worker_threads", "worker_threads", "https"]
+				: ["node:worker_threads", "worker_threads", "https"];
+		opts.format = format;
+		opts.minify = true;
+		opts.keepNames = true;
+		opts.minifyWhitespace = true;
+		opts.treeShaking = true;
+		opts.splitting = format === "esm";
 		opts.bundle = true;
-        opts.format = 'esm';
-        opts.target = ['es2020', 'chrome2020', 'node18']
+		opts.platform = "browser";
+		console.log("####################### " + format.toUpperCase());
 	},
-	platform: "browser",
 	outDir: "dist",
 	skipNodeModulesBundle: true,
 	minifyWhitespace: true,
+	platform: "browser",
 	minifyIdentifiers: true,
 	minifySyntax: true,
-	splitting: true,
 	target: ["es2020", "chrome2020", "node18"],
 	minify: true,
 	entry: ["./src/"],

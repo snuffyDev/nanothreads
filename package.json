@@ -1,11 +1,14 @@
 {
-	"name": "nanothread",
+	"name": "nanothreads",
 	"author": "snuffydev",
+	"repository": {
+		"url": "https://github.com/snuffyDev/nanothreads"
+	},
 	"license": "ISC",
-	"version": "0.1.0",
+	"version": "0.1.8",
 	"type": "module",
 	"source": "./src/index.ts",
-	"description": "A tiny Cross-Platform Worker & Concurrency Library",
+	"description": "a tiny cross-platform Worker & concurrency library",
 	"keywords": [
 		"threads",
 		"worker",
@@ -19,7 +22,7 @@
 		"dist",
 		"package.json"
 	],
-	"main": "./dist/index-node.js",
+	"main": "./dist/index.js",
 	"scripts": {
 		"build": "tsup-node",
 		"start": "pnpm run build && node --loader=ts-node/esm --experimental-specifier-resolution=node ./index",
@@ -27,32 +30,27 @@
 	},
 	"exports": {
 		".": {
-			"default": "./dist/index-browser.js",
-			"browser": "./dist/index-browser.js",
-			"import": "./dist/index-node.cjs",
-			"require": "./dist/index-node.js",
-			"types": "./dist/index-browser.d.ts"
-		},
-		"./web": {
-			"default": "./dist/index-browser.js",
-			"browser": "./dist/index-browser.js",
-			"import": "./dist/index-browser.cjs",
-			"require": "./dist/index-browser.js",
-			"types": "./dist/index-browser.d.ts"
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs",
+			"browser": "./dist/index.js",
+			"default": "./dist/index.js",
+			"types": "./dist/index.d.ts"
 		},
 		"./sync": {
+			"import": "./dist/sync/index.js",
+			"require": "./dist/sync/index.cjs",
 			"browser": "./dist/sync/index.js",
-			"default": "./dist/index-browser.js",
-			"import": "./dist/sync/index.cjs",
-			"require": "./dist/sync/index.js",
+			"default": "./dist/sync/index.js",
 			"types": "./dist/sync/index.d.ts"
 		},
+		"./internals": {
+			"import": "./dist/internals/index.js",
+			"require": "./dist/internals/index.cjs",
+			"default": "./dist/internals/index.cs",
+			"types": "./dist/internals/index.d.ts"
+		},
 		"./models": {
-			"default": "./dist/index-browser.js",
-			"browser": "./dist/models/index.js",
-			"import": "./dist/models/index.cjs",
-			"require": "./dist/models/index.js",
-			"types": "./dist/models/index.d.ts"
+		"types": "./dist/models/index.d.ts"
 		},
 		"./package.json": "./package.json"
 	},

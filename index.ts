@@ -1,51 +1,54 @@
-import { Semaphore, thread, Mutex } from './dist/index-node.js';
+import { Semaphore, thread, Mutex } from "./src";
 
 const lock = new Mutex();
 
-const worker = thread<string>().spawn(async (url)=> {
-	const h = require('https')
-	return new Promise<string>(resolve => {
-
+const worker = thread().spawn(async (url) => {
+	const h = require("https");
+	return new Promise<string>((resolve) => {
 		//@ts-ignore node types
-		h.get(url, (res)=>{
-			let out = ""
+		h.get(url, (res) => {
+			let out = "";
 
 			//@ts-ignore node types
-			res.setEncoding("utf8")
+			res.setEncoding("utf8");
 
-			res.on('end', ()=> {resolve(out)});
+			res.on("end", () => {
+				resolve(out);
+			});
 
 			//@ts-ignore node types
-			res.on('data', (chunk) => out += chunk);
-		})
-	})
+			res.on("data", (chunk) => (out += chunk));
+		});
+	});
 });
 
-const sleep = (ms = 1000) => new Promise((resolve) => {
-	setTimeout(resolve, ms);
-})
+console.log(typeof navigator !== "undefined");
+
+const sleep = (ms = 1000) =>
+	new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
 async function http(url: string) {
-	return await lock.dispatch(async ()=>{
-		await sleep(2500)
+	return await lock.dispatch(async () => {
+		await sleep(2500);
 		//@ts-ignore
-		return await fetch(url).then((res) => res.text())
-	})
+		return await fetch(url).then((res) => res.text());
+	});
 }
 
-async function main(){
-	const url = "https://beatbump.ml/api/v1/stats.json"
+async function main() {
+	const url = "https://api.kanye.rest";
 
 	/**
 	 * Testing Threading
 	 * ====
 	 * Simple, easy, quick threading in the browser & Node.js
 	 */
-	const thread_response = await worker(("https://beatbump.ml/api/v1/stats.json")).join();
-
-	console.group("Threading")
-	console.log(JSON.parse(thread_response[1]))
+	const thread_response = await worker.send("");
+	console.group("Threading");
+	console.log(JSON.parse(thread_response));
 	console.groupEnd();
-	console.group("Semaphore")
+	console.group("Semaphore");
 	/**
 	 * Testing Semaphore
 	 * =====
@@ -63,13 +66,12 @@ async function main(){
 	 * The lock that's used below has a limit of 2
 	 */
 	for (let i = 0; i < 8; i++) {
-		http(url).then((res)=>{
-			console.log(res)
+		http(url).then((res) => {
+			console.log(res);
 		});
 	}
 
 	console.groupEnd();
 }
 
-
-main()
+main();
