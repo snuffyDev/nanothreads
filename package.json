@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.1.9",
+	"version": "0.1.95",
 	"type": "module",
 	"source": "./src/index.ts",
 	"description": "a tiny cross-platform Worker & concurrency library",
