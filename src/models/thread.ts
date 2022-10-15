@@ -1,13 +1,21 @@
 import type { StatusCode } from "./statuses";
 
-export type WorkerThreadFn<Args = unknown, Output = unknown> = (...args: Args[]) => Output;
+export type GetReturnType<T> = T extends (...args: never[]) => Promise<infer Value> ? Promise<Value> : T;
+export type WorkerThreadFn<Args = unknown, Output = any> = (...args: Args[]) => Output;
 export type UnsubscribeFn = () => void;
-
 export interface ThreadOptions {
 	once?: boolean;
 }
-export interface ThreadBuilder {
-	spawn: <A = unknown, Output = unknown>(func: WorkerThreadFn<A, Output>, options?: ThreadOptions) => Thread<A, Output>;
+
+export interface ThreadBuilder<Args = unknown> {
+	(count?: number | undefined): ThreadSpawner<Args>;
+}
+
+export interface ThreadSpawner<ArgType = unknown> {
+	spawn: <Func extends WorkerThreadFn<ArgType> = WorkerThreadFn<ArgType>>(
+		func: Func,
+		options?: ThreadOptions,
+	) => Thread<ArgType, GetReturnType<Func>>;
 }
 
 export interface Thread<T = unknown, Output = unknown> {

@@ -1,25 +1,19 @@
-import { Semaphore, thread, Mutex } from "./src";
+import { Semaphore, thread, Mutex } from "./src/";
 
 const lock = new Mutex();
 
-const worker = thread().spawn(async (url) => {
-	const h = require("https");
-	return new Promise<string>((resolve) => {
-		//@ts-ignore node types
-		h.get(url, (res) => {
-			let out = "";
+type MyArgs = [string, number];
 
-			//@ts-ignore node types
-			res.setEncoding("utf8");
+/// You can create a handle to spawn a new thread that accepts the same
+/// argument types across different functions.
+const handle = thread<MyArgs>();
 
-			res.on("end", () => {
-				resolve(out);
-			});
+const worker1 = handle.spawn(async (...args) => {});
 
-			//@ts-ignore node types
-			res.on("data", (chunk) => (out += chunk));
-		});
-	});
+const worker = thread<string>().spawn(async (url) => {
+	return await fetch(url)
+		.then((res) => res.json())
+		.then((json) => json as { quote: string });
 });
 
 console.log(typeof navigator !== "undefined");
@@ -44,7 +38,7 @@ async function main() {
 	 * ====
 	 * Simple, easy, quick threading in the browser & Node.js
 	 */
-	const thread_response = await worker.send("");
+	const thread_response = await worker.send("https://api.kanye.rest");
 	console.group("Threading");
 	console.log(JSON.parse(thread_response));
 	console.groupEnd();

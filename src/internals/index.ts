@@ -1,1 +1,1 @@
-export { Worker } from "./NodeWorker.js";
+export { browser } from './utils';

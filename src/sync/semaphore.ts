@@ -1,5 +1,5 @@
-import { Releaser } from "../models/promises";
-import { Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
+import type { Releaser } from "../models/promises";
+import type { Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
 
 export class Semaphore implements ISemaphore {
 	#queue: ISemaphoreQueueEntry[][] = [];
@@ -17,7 +17,7 @@ export class Semaphore implements ISemaphore {
 		try {
 			return await callback();
 		} finally {
-            queueMicrotask(release);
+			queueMicrotask(release);
 		}
 	}
 	acquire(value: number = 1): Promise<[number, Releaser]> {

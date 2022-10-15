@@ -1,9 +1,15 @@
+import { browser } from "./internals/utils";
 import { Worker as NodeWorker } from "./internals/NodeWorker.js";
 
 import { StatusCode } from "./models";
-import type { ThreadBuilder } from "./models/thread";
-
-const browser = typeof navigator !== "undefined" && typeof window !== "undefined";
+import type {
+	GetReturnType,
+	Thread,
+	ThreadBuilder,
+	ThreadOptions,
+	ThreadSpawner,
+	WorkerThreadFn,
+} from "./models/thread";
 
 const TEMPLATE_NODE = `const { parentPort } = require('worker_threads');
 	(async ({data}) => {
@@ -23,11 +29,10 @@ function receive<A>({ data }: { data: A }): A {
 	return data;
 }
 
-export function thread(): ThreadBuilder {
+export function thread<T = unknown>(count: number | undefined = 0): ThreadSpawner<T> {
 	return {
-		spawn(func, opts = {}) {
-			if (typeof func !== "function")
-				throw new Error("Invalid parameter `func`, expecting 'function' got " + typeof func);
+		spawn(func, opts: { once?: boolean } = {}) {
+			if (typeof func !== "function") throw new TypeError("Parameter `func` must be a callable function.");
 
 			let func_str = func.toString();
 			func_str = (browser ? TEMPLATE_BROWSER : TEMPLATE_NODE).replace("$1", func_str);
@@ -36,6 +41,7 @@ export function thread(): ThreadBuilder {
 
 			const options = !browser ? { eval: true } : {};
 			const worker = new Worker(src, options);
+
 			async function terminate() {
 				worker.terminate();
 				if (browser) {
@@ -48,15 +54,25 @@ export function thread(): ThreadBuilder {
 
 			return {
 				send(data) {
-					return new Promise((resolve, reject) => {
-						worker.addEventListener(
-							"message",
-							(data) => {
-								resolve(receive(data));
-								if (opts.once) terminate();
-							},
-							{ once: true },
-						);
+					return new Promise<GetReturnType<typeof func>>((resolve, reject) => {
+						function message(data: MessageEvent<GetReturnType<typeof func>>) {
+							resolve(receive(data));
+							if (opts.once) terminate();
+							worker.removeEventListener("message", message);
+							worker.removeEventListener("messageerror", error);
+							worker.removeEventListener("error", error);
+						}
+						function error(err: unknown) {
+							reject(err);
+							if (opts.once) terminate();
+							worker.removeEventListener("message", message);
+							worker.removeEventListener("messageerror", error);
+							worker.removeEventListener("error", error);
+						}
+						worker.addEventListener("message", message, { once: true });
+						worker.addEventListener("messageerror", error);
+						worker.addEventListener("error", error);
+
 						worker.postMessage(data);
 					});
 				},

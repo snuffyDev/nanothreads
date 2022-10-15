@@ -1,43 +1,79 @@
 #!
 // import { forEach } from './../src/collections/array/forEach';
 // import { forEach } from './../src/collections/array/forEach';
-import * as fs from 'fs';
-import _path from 'path';
+import * as fs from "fs";
+import _path from "path";
 
-const BASE_PATH = _path.resolve('.');
+const BASE_PATH = _path.resolve(".");
 
 const makePath = (...str) => _path.join(...str);
-const TypeExport = /(?<=export (?:enum|type|interface)[\s]?)(\w+)/gm;
-const NormalExport = /(?<=export (?:function|const|class)[\s]?)(\w+)/gm;
+const TypeExport = /(?<=export (?:type|interface)[\s]?)([a-zA-Z0-9]+)/gmi;
+const NormalExport = /(?<=export (?:function|const|enum|let|class)[\s]?)([a-zA-Z0-9]+)/gmi;
+
+function matchFile(file) {
+
+		const normExports = [...new Set(file.match(NormalExport)) ?? undefined] ?? undefined;
+		const typeExports = [...new Set(file.match(TypeExport)) ?? undefined] ?? undefined;
+	return {
+		normExports,
+		typeExports
+	}
+}
 
 function recursiveDirRead(path) {
-    let skip = false;
-    let directory = fs.readdirSync(path, { encoding: 'utf-8' });
+	let skip = false;
+	let directory = fs.readdirSync(path, { encoding: "utf-8" });
 
-    const indexPath = makePath(path, 'index.ts');
-    fs.writeFileSync(indexPath, '', { encoding: 'utf-8' });
-    const dirs = [];
-    directory.forEach((entry) => {
-        if (fs.statSync(path + _path.sep + entry).isDirectory()) {
-            dirs.push(entry);
-            recursiveDirRead(makePath(path, entry));
+	const indexPath = makePath(path, "index.ts");
+	fs.writeFileSync(indexPath, "", { encoding: "utf-8" });
+	const dirs = [];
+	const type = [];
+	const normal = [];
+	directory.forEach((entry) => {
+		if (fs.statSync(path + _path.sep + entry).isDirectory()) {
+			dirs.push({name: entry, exports: recursiveDirRead(makePath(path, entry))});
 
-        }
-        else {
-            if (skip) return;
-            if (!fs.existsSync(makePath(path, 'index.ts'))) fs.writeFileSync(makePath(path, 'index.ts'), '', { encoding: 'utf-8' });
-            if (entry === 'index') return;
-            const file = fs.readFileSync(makePath(path, entry), { encoding: 'utf-8' });
-            const $exports = [...new Set((file.match(NormalExport) || []))];
-            const $typeExports = [...new Set(file.match(TypeExport) || [])];
+		} else {
+			if (skip) return;
+			if (!entry.endsWith(".ts")) return;
+			if (!fs.existsSync(makePath(path, "index.ts")))
+				fs.writeFileSync(makePath(path, "index.ts"), "", { encoding: "utf-8" });
+			if (entry === "index.ts") return;
+			const file = fs.readFileSync(makePath(path, entry), { encoding: "utf-8" });
+			const { typeExports = [], normExports = [] } = matchFile(file);
+			if (typeExports.length >= 1){
+			type.push(...typeExports);
+				fs.appendFileSync(
+					makePath(path, "index.ts"),
+					`export type { ${typeExports.filter(item => item !== '').join(", ")} } from './${entry.slice(0, -3)}';\n`,
+					{ encoding: "utf-8" },
+				);}
+			if (normExports.length >= 1){
+				normal.push(...normExports);
+				console.log(normExports)
+				fs.appendFileSync(
+					makePath(path, "index.ts"),
+					`export { ${normExports.filter(item => item !== '').join(", ")} } from './${entry.slice(0, -3)}';\n`,
+					{ encoding: "utf-8" },
+				);}
+		}
+	});
+	dirs.forEach((item) => {
+		if (item.exports.type.length) {
+		console.log(item.name, item.exports.type.length)
+		fs.appendFileSync(indexPath, `export type { ${item.exports.type.join(",")} } from './${item.name}';\n`, { encoding: "utf-8" });
+		}
+		if (item.exports.normal.length) {
+		console.log(item.name, item.exports.normal.length)
+		fs.appendFileSync(indexPath, `export { ${item.exports.normal.join(",")} } from './${item.name}';\n`, { encoding: "utf-8" });
+		}
 
-            if ($typeExports.length > 0) fs.appendFileSync(makePath(path, 'index.ts'), `export type { ${$typeExports.join(', ')} } from './${entry.slice(0, -3)}';\n`, { encoding: 'utf-8' });
-            if ($exports.length > 0) fs.appendFileSync(makePath(path, 'index.ts'), `export { ${$exports.join(', ')} } from './${entry.slice(0, -3)}';\n`, { encoding: 'utf-8' });
-
-        }
-    });
-    dirs.forEach((item) => {
-        fs.appendFileSync(indexPath, `export * from './${item}';\n`, { encoding: 'utf-8' });
-    });
+	});
+	// normal.shift()
+	// t.shift()
+	return {
+		normal: normal.flat(1),
+		type: type.flat(1)
+	}
 }
-recursiveDirRead(makePath(BASE_PATH, 'src'));
+recursiveDirRead(makePath(BASE_PATH, "src"));

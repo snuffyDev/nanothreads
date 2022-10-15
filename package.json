@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"type": "module",
 	"source": "./src/index.ts",
 	"description": "a tiny cross-platform Worker & concurrency library",
@@ -26,6 +26,7 @@
 	"scripts": {
 		"build": "tsup-node",
 		"start": "pnpm run build && node --loader=ts-node/esm --experimental-specifier-resolution=node ./index",
+		"format": "prettier --write .",
 		"test": "size-limit"
 	},
 	"exports": {
@@ -50,7 +51,7 @@
 			"types": "./dist/internals/index.d.ts"
 		},
 		"./models": {
-		"types": "./dist/models/index.d.ts"
+			"types": "./dist/models/index.d.ts"
 		},
 		"./package.json": "./package.json"
 	},
