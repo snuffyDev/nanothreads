@@ -1,15 +1,8 @@
 import { browser } from "./internals/utils";
 import { Worker as NodeWorker } from "./internals/NodeWorker.js";
-
+import { BroadcastChannel } from "./threads/channel";
 import { StatusCode } from "./models";
-import type {
-	GetReturnType,
-	Thread,
-	ThreadBuilder,
-	ThreadOptions,
-	ThreadSpawner,
-	WorkerThreadFn,
-} from "./models/thread";
+import type { GetReturnType, ThreadSpawner, WorkerThreadFn } from "./models/thread";
 
 const TEMPLATE_NODE = `const { parentPort } = require('worker_threads');
 	(async ({data}) => {
@@ -29,9 +22,9 @@ function receive<A>({ data }: { data: A }): A {
 	return data;
 }
 
-export function thread<T = unknown>(count: number | undefined = 0): ThreadSpawner<T> {
+export function thread<T = unknown>(count: number = 0): ThreadSpawner<T> {
 	return {
-		spawn(func, opts: { once?: boolean } = {}) {
+		spawn(func: WorkerThreadFn<T>, opts: { once?: boolean } = {}) {
 			if (typeof func !== "function") throw new TypeError("Parameter `func` must be a callable function.");
 
 			let func_str = func.toString();

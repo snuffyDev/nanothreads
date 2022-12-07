@@ -1,7 +1,9 @@
 import type { StatusCode } from "./statuses";
 
-export type GetReturnType<T> = T extends (...args: never[]) => Promise<infer Value> ? Promise<Value> : T;
-export type WorkerThreadFn<Args = unknown, Output = any> = (...args: Args[]) => Output;
+export type GetReturnType<T> = T extends (...args: never[]) => Promise<ReturnType<infer Value>>
+	? Promise<ReturnType<Value>>
+	: T;
+export type WorkerThreadFn<Args, Output = unknown> = (...args: Args[]) => Output;
 export type UnsubscribeFn = () => void;
 export interface ThreadOptions {
 	once?: boolean;
@@ -12,20 +14,20 @@ export interface ThreadBuilder<Args = unknown> {
 }
 
 export interface ThreadSpawner<ArgType = unknown> {
-	spawn: <Func extends WorkerThreadFn<ArgType> = WorkerThreadFn<ArgType>>(
-		func: Func,
+	spawn: (
+		func: WorkerThreadFn<ArgType>,
 		options?: ThreadOptions,
-	) => Thread<ArgType, GetReturnType<Func>>;
+	) => Thread<ArgType, GetReturnType<WorkerThreadFn<ArgType>>>;
 }
 
-export interface Thread<T = unknown, Output = unknown> {
+export interface Thread<Args = unknown, Output = unknown> {
 	/**
 	 * Executes the thread function and returns the result.
 	 *
 	 * @param {?(T)} [data] optional
 	 * @returns {(Promise<Output>)}
 	 */
-	send(data: T): Promise<Output>;
+	send<T extends Args>(data: T): Promise<Output>;
 
 	/** Terminates the thread */
 	terminate(): Promise<StatusCode>;

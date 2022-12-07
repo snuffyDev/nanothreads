@@ -1,0 +1,1 @@
+export { BroadcastChannel } from './channel';

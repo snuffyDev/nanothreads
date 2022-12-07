@@ -1,24 +1,27 @@
 # nanothreads
 
-> a tiny cross-platform Worker & concurrency library
+A powerful Worker-based multi-threading library for the browser, and Node.js
 
-Yet another Worker and concurrency library. What makes this one any different from the others? It's tiny, it's straight
-forward.
+## Features
 
-Works both in the browser and in Node.js!
-
+- Spawn your worker threads using actual functions
+- Tiny bundle size - no bloat!
+- 100% Fully Typed
+- Unified API, using the library is exactly the same in both the browser and in Node.
 ## Install
 
-```sh
-npm  install --save  nanothreads    // npm
-pnpm install --save  nanothreads    // pnpm
-yarn add             nanothreads    // yarn
+```bsh
+npm  install nanothreads
+
+pnpm install nanothreads
+
+yarn add nanothreads
 ```
 
 And then use!
 
 ```ts
-import { Mutex, thread } from "nanothreads";
+import { thread } from "nanothreads";
 
 type Quote = {
 	quote: string;
@@ -37,31 +40,17 @@ const thread_response = await handle.send("https://api.kanye.rest");
 // Logs: { "quote": "Man... whatever happened to my antique fish tank?" }
 console.log(thread_response);
 
-// Use a Mutex (or use a Semaphore) to limit concurrent function calls!
-const lock = new Mutex();
-
-const http = async (url: string) => {
-	return await lock.dispatch(async () => {
-		return await fetch(url).then((response) => response.text());
-	});
-};
-
-// this will log one quote from the api at a time
-
-for (let i = 0; i < 15; i++) {
-	http("https://example.com/").then((res) => {
-		// ...
-	});
-}
 ```
 
-There's more to come soon!
-
-## Guide
+## Getting started
 
 ### `thread<T>()`
 
-Nanothreads exports a function - `thread` - for working with a Worker script that runs off the main thread.
+Spawn a new thread handle, which will accept arguments of type `T`
+
+| *returns* |
+|-- |
+| `spawn(func: Callback<T>)` |
 
 #### Usage
 
