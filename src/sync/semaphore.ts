@@ -1,5 +1,5 @@
 import type { Releaser } from "../models/promises";
-import type { Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
+import type { ArgCallback, Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
 
 export class Semaphore implements ISemaphore {
 	#queue: ISemaphoreQueueEntry[][] = [];
@@ -11,13 +11,13 @@ export class Semaphore implements ISemaphore {
 	isLocked(): boolean {
 		return this.#value <= 0;
 	}
-	async dispatch<T>(callback: Callback<T>): Promise<T> {
+	async dispatch<T>(callback: Callback<T>): Promise<Awaited<T>> {
 		const [_, release] = await this.acquire();
 
 		try {
 			return await callback();
 		} finally {
-			queueMicrotask(release);
+			release();
 		}
 	}
 	acquire(value: number = 1): Promise<[number, Releaser]> {
@@ -39,7 +39,7 @@ export class Semaphore implements ISemaphore {
 				this.#waiting[value - 1] = [];
 			}
 			this.#waiting[value - 1].push(resolve);
-			queueMicrotask(this.#dispatch);
+			this.#dispatch;
 		});
 	}
 	setValue(value: number): void {

@@ -14,7 +14,7 @@
 		"strict": true,
 		"sourceMap": true,
 		"resolveJsonModule": true,
-		"baseUrl": "./src",
+		"baseUrl": "src",
 		"noEmit": true,
 		"allowJs": true,
 		"rootDir": ".",
@@ -22,22 +22,51 @@
 		"declarationDir": "dist",
 		"esModuleInterop": true,
 		"downlevelIteration": true,
-		"importsNotUsedAsValues": "preserve",
+		"importsNotUsedAsValues": "error",
 		"preserveValueImports": false,
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noImplicitReturns": true,
 		"skipLibCheck": true,
+		"paths": {
+			"models": [
+				"src/models"
+			],
+			"models/*": [
+				"src/models/*"
+			],
+			"sync": [
+				"src/sync"
+			],
+			"sync/*": [
+				"src/sync/*"
+			],
+			"threads": [
+				"src/threads"
+			],
+			"threads/*": [
+				"src/threads/*"
+			],
+			"internals": [
+				"src/internals"
+			],
+			"internals/*": [
+				"src/internals/*"
+			],
+		},
 		"types": [
 			"node"
 		]
 	},
 	"include": [
 		"src/**/*.ts",
-		"src/internals/NodeWorker.ts"
+		"src/**/*.d.ts",
+		"src/internals/NodeWorker.ts",
 	],
 	"exclude": [
 		"node_modules/**/*",
+		"src/internals/NodeWorker-esm.mjs",
+		"src/internals/NodeWorker-cjs.js",
 		"dist/*",
 		"./index.ts"
 	]

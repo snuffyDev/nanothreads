@@ -30,3 +30,4 @@ index.js
 .gitignore
 NodeWorker-cjs.ts
 NodeWorker-esm.mts
+BACKUP.old

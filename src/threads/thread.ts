@@ -1,13 +1,15 @@
-import { StatusCode } from "models";
-import type { Thread as IThread, WorkerThreadFn } from "models/thread";
+import { StatusCode } from "../models";
+import type { IThread as IThread, WorkerThreadFn } from "../models/thread";
 import { browser } from "../internals";
-import { Worker, Worker as ThreadWorker } from "../internals/NodeWorker";
+import { Worker } from "../internals/NodeWorker";
+import type { WorkerOptions as WON } from "worker_threads";
 
-const TEMPLATE_NODE = `const { parentPort } = require('worker_threads');
-	(async ({data}) => {
+const TEMPLATE_NODE = `const { parentPort, workerData } = require('worker_threads');
+parentPort?.on('message', async ({data}) => {
 	const res = await ($1)(data);
 	parentPort.postMessage({ data: res, status: 200 });
-	})();`;
+	})
+	`;
 
 const TEMPLATE_BROWSER = `const res = [];
     onmessage = async (event) => {
@@ -15,27 +17,36 @@ const TEMPLATE_BROWSER = `const res = [];
         postMessage(res);
     };`;
 
-function receive<A = unknown>({ data }: { data: A }): A {
+function receive<A = unknown | PromiseLike<unknown>>({ data }: { data: A }): A {
 	return data;
 }
 
-function funcToString<Func extends (...args: never[]) => any>(func: Func): string {
+function funcToString<Func extends (...args: any[]) => any>(func: Func): string {
 	let func_str = func.toString();
 	if (browser) {
 		return TEMPLATE_BROWSER;
 	}
 	return TEMPLATE_NODE.replace("$1", func_str);
 }
+//  {resolve, reject}: { resolve: (value?: unknown )=>void, reject: (err: unknown) => void }
+const attachEventListeners = <T extends MessagePort>(
+	target: T,
+	{ message, error }: { message: (data: MessageEvent<any>) => void; error: (err: unknown) => void },
+) => {
+	target.addEventListener("message", message, { once: true });
 
-export class Thread<Args, Output> implements IThread<Args, Output> {
+	target.addEventListener("messageerror", error);
+	target.addEventListener("error", error);
+};
+export class Thread<Args extends [...args: any], Output> implements IThread<Args, Output> {
 	// Worker instance
-	#handle: typeof ThreadWorker["prototype"];
+	#handle: typeof Worker["prototype"];
 	// stringified version of the callback fn
 	#src: string;
 
 	constructor(
 		readonly func: WorkerThreadFn<Args, Output | Promise<Output>>,
-		private opts: { once?: boolean } = { once: false },
+		private opts: { once?: boolean } = { once: true },
 	) {
 		if (typeof func !== "function") throw new TypeError("Parameter `func` must be a callable function.");
 
@@ -43,13 +54,13 @@ export class Thread<Args, Output> implements IThread<Args, Output> {
 
 		this.#src = browser ? URL.createObjectURL(new Blob([func_str], { type: "text/javascript" })) : func_str;
 
-		const options = !browser ? { eval: true } : {};
+		const options: WorkerOptions | WON = !browser ? { eval: true } : {};
 		this.#handle = new Worker(this.#src, options);
 	}
 	send<T extends Args>(data: T) {
-		return new Promise<Output>((resolve, reject) => {
+		return new Promise<Output>((resolve: (value: Output) => void, reject) => {
 			const message = (data: MessageEvent<Output>) => {
-				resolve(receive<Output>({ data: data.data }));
+				resolve(receive<Output>(data));
 				if (this.opts.once) this.terminate();
 				this.#handle.removeEventListener("message", message);
 				this.#handle.removeEventListener("messageerror", error);
@@ -62,11 +73,10 @@ export class Thread<Args, Output> implements IThread<Args, Output> {
 				this.#handle.removeEventListener("messageerror", error);
 				this.#handle.removeEventListener("error", error);
 			};
-			this.#handle.addEventListener("message", message, { once: true });
-			this.#handle.addEventListener("messageerror", error);
-			this.#handle.addEventListener("error", error);
 
-			this.#handle.postMessage(data);
+			attachEventListeners(this.#handle, { message, error });
+
+			this.#handle.postMessage({ data });
 		});
 	}
 

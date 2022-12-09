@@ -1,3 +1,2 @@
-export { Mutex } from './mutex';
-export { RWLock } from './rwlock';
+export { Mutex, ThreadGuard } from './mutex';
 export { Semaphore } from './semaphore';
