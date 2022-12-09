@@ -27,6 +27,7 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noImplicitReturns": true,
+		"strictFunctionTypes": false,
 		"skipLibCheck": true,
 		"paths": {
 			"models": [

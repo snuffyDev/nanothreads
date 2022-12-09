@@ -1,4 +1,4 @@
-import { Semaphore, Mutex } from "./dist";
+import { Semaphore, Mutex, Thread } from "./dist";
 import { ThreadPool } from "./dist";
 const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 const originalEmit = process.emit;
@@ -18,7 +18,7 @@ process.emit = function (name, data = {}, ...args) {
 	// @ts-ignore
 	return originalEmit.apply(process, arguments);
 };
-const pool = new ThreadPool<[url: string], Promise<{ quote: string }>>({
+const pool = new ThreadPool<[url: string, id: number], Promise<{ quote: string }>>({
 	task: async (args) => {
 		return await fetch(args)
 			.then((res) => res.json())

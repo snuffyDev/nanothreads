@@ -60,6 +60,7 @@ function recursiveDirRead(path) {
 					{ encoding: "utf-8" },
 				);}
 			if (normExports.length >= 1){
+				normal.push(...normExports);
 				fs.appendFileSync(
 					makePath(path, "index.ts"),
 					`export { ${normExports.filter(item => item !== '').join(", ")} } from './${entry.slice(0, -3)}';\n`,

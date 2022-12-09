@@ -7,12 +7,14 @@ interface Indexable<T> {
 }
 
 type BusyThreadLock<T> = { resolve: (value: T) => void; reject: (reason?: unknown) => void };
-export class ThreadPool<Arguments extends [...args: any], Output> {
-	#threads: ThreadGuard<Arguments, Output>[] = [];
-	#lock: Semaphore;
+
+export class ThreadPool<Arguments extends [...args: any[]], Output> {
+	#threads: ThreadGuard<[...args: Arguments], Output>[] = [];
 	#curThreadNum = -1;
 	#max = 0;
-	#task: WorkerThreadFn<Arguments, Output>;
+	#lock: Semaphore;
+	#task: WorkerThreadFn<[...args: Arguments], Output>;
+	#queue: ThreadGuard<Arguments, Output>[][] = [];
 	constructor({ task, min = 1, max = 4 }: { task: WorkerThreadFn<Arguments, Output>; min: number; max: number }) {
 		if (min < 1) min = 1;
 		if (max < min) max = min + 1;
@@ -20,15 +22,15 @@ export class ThreadPool<Arguments extends [...args: any], Output> {
 		let low = min - 1;
 		let high = max;
 		this.#max = high;
-		this.#lock = new Semaphore(max);
 		this.#task = task;
+		this.#lock = new Semaphore(max);
 		this.#threads = Array(high).fill(new ThreadGuard<Arguments, Output>(this.#task, { once: false }));
 	}
 	private nextInt() {
 		return ++this.#curThreadNum % this.#max;
 	}
 
-	public async exec(...args: Arguments): Promise<Awaited<Output> | null> {
+	public async exec(args: Arguments): Promise<Awaited<Output> | null> {
 		const [_, release] = await this.#lock.acquire();
 		const num = this.nextInt();
 		const thread = this.#threads[num];

@@ -38,16 +38,12 @@ const attachEventListeners = <T extends MessagePort>(
 	target.addEventListener("messageerror", error);
 	target.addEventListener("error", error);
 };
-export class Thread<Args extends [...args: any], Output> implements IThread<Args, Output> {
-	// Worker instance
+export class Thread<Args extends any[], Output> implements IThread<Args, Output> {
 	#handle: typeof Worker["prototype"];
 	// stringified version of the callback fn
 	#src: string;
 
-	constructor(
-		readonly func: WorkerThreadFn<Args, Output | Promise<Output>>,
-		private opts: { once?: boolean } = { once: true },
-	) {
+	constructor(readonly func: WorkerThreadFn<Args, Output>, private opts: { once?: boolean } = { once: true }) {
 		if (typeof func !== "function") throw new TypeError("Parameter `func` must be a callable function.");
 
 		const func_str = funcToString(func);
@@ -57,7 +53,7 @@ export class Thread<Args extends [...args: any], Output> implements IThread<Args
 		const options: WorkerOptions | WON = !browser ? { eval: true } : {};
 		this.#handle = new Worker(this.#src, options);
 	}
-	send<T extends Args>(data: T) {
+	send(data: [...args: Args]) {
 		return new Promise<Output>((resolve: (value: Output) => void, reject) => {
 			const message = (data: MessageEvent<Output>) => {
 				resolve(receive<Output>(data));
