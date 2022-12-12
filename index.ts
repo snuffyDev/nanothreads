@@ -13,6 +13,10 @@ const pool = new ThreadPool<[string], Promise<{ quote: string }>>({
 	max: 2,
 });
 
+new Thread<[string], string>((name: string) => {
+	return "Hello " + name;
+});
+
 async function rn() {
 	let runs = 22;
 	for (let idx = 0; idx < runs; idx++) {

@@ -21,69 +21,43 @@ yarn add nanothreads
 And then use!
 
 ```ts
-import { thread } from "nanothreads";
+import { Thread, ThreadPool } from "nanothreads";
 
 type Quote = {
 	quote: string;
 };
 
-// Create a thread handle
-const handle = thread<string>().spawn(async (url) => {
-	return await fetch(url)
-		.then((res) => res.json())
-		.then((json) => json as Quote);
+// Create a single thread
+const thread = new Thread<[name: string], string>((name) => {
+	return "Hello " + name;
 });
 
-// Pass on some data to the thread
-const thread_response = await handle.send("https://api.kanye.rest");
+// Create a thread pool
+// Use a tuple type to describe `args`
+const pool = new ThreadPool<[url: string, index: number], Promise<Quote>>({
+	task: async (url, index) => {
+		console.log(index);
+		return fetch(url)
+			.then((res) => res.json())
+			.then((json) => json as Quote);
+	},
+	// Min number of threads = 1
+	min: 1,
+	// Max number of threads = 5
+	max: 5,
+});
 
-// Logs: { "quote": "Man... whatever happened to my antique fish tank?" }
-console.log(thread_response);
+	// Pass on some data to the thread pool!
+for (let idx = 0; idx < 10; idx++) {
+	await handle.send("https://api.kanye.rest", idx).then(console.log);
+}
+
+// Pass data to the thread
+// Returns: "Hello Kanye"
+const greetings = await thread.send('Kanye');
 
 ```
 
 ## Getting started
 
-### `thread<T>()`
-
-Spawn a new thread handle, which will accept arguments of type `T`
-
-| *returns* |
-|-- |
-| `spawn(func: Callback<T>)` |
-
-#### Usage
-
-```ts
-
-import { thread } from 'nanothreads';
-
-type MyArgs = { idx: number }
-
-/// You can create a handle to spawn
-/// separate threads that will accept the same
-/// argument types across different functions.
-const handle = thread<MyArgs>();
-
-const worker1 = handle.spawn(async ({ idx }) => {
-	return idx + 1;
-})
-
-const worker2 = handle.spawn(async ({ idx }) => {
-	return new Array(idx).fill(false).map((_, i) => i);
-})
-
-/// Or you can just use it in one-shot
-
-const one_shot = thread<string>().spawn(async (url) => {
-	return await fetch(url).then(....)
-});
-
-/// Cleanup once your done!
-
-one_shot.terminate();
-worker1.terminate();
-worker2.terminate();
-```
-
-// todo!
+// TODO!
