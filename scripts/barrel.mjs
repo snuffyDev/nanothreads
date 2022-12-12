@@ -3,7 +3,6 @@
 // import { forEach } from './../src/collections/array/forEach';
 import * as fs from "fs";
 import _path from "path";
-
 const BASE_PATH = _path.resolve(".");
 
 const makePath = (...str) => _path.join(...str);
@@ -20,6 +19,18 @@ function matchFile(file) {
 	}
 }
 
+
+
+function getIntersection(a, b) {
+  const set1 = new Set(a);
+  const set2 = new Set(b);
+
+  const intersection = [...set1].filter(
+    element => set2.has(element)
+  );
+
+  return intersection;
+}
 function recursiveDirRead(path) {
 	let skip = false;
 	let directory = fs.readdirSync(path, { encoding: "utf-8" });
@@ -50,7 +61,6 @@ function recursiveDirRead(path) {
 				);}
 			if (normExports.length >= 1){
 				normal.push(...normExports);
-				console.log(normExports)
 				fs.appendFileSync(
 					makePath(path, "index.ts"),
 					`export { ${normExports.filter(item => item !== '').join(", ")} } from './${entry.slice(0, -3)}';\n`,
@@ -58,19 +68,19 @@ function recursiveDirRead(path) {
 				);}
 		}
 	});
-	dirs.forEach((item) => {
+
+	dirs.forEach(async (item) => {
 		if (item.exports.type.length) {
-		console.log(item.name, item.exports.type.length)
+
 		fs.appendFileSync(indexPath, `export type { ${item.exports.type.join(",")} } from './${item.name}';\n`, { encoding: "utf-8" });
 		}
 		if (item.exports.normal.length) {
-		console.log(item.name, item.exports.normal.length)
+
 		fs.appendFileSync(indexPath, `export { ${item.exports.normal.join(",")} } from './${item.name}';\n`, { encoding: "utf-8" });
 		}
 
 	});
-	// normal.shift()
-	// t.shift()
+
 	return {
 		normal: normal.flat(1),
 		type: type.flat(1)

@@ -1,5 +1,5 @@
 import { browser } from "./utils";
-interface IWorkerOptions extends WorkerOptions {}
+export interface IWorkerOptions extends WorkerOptions {}
 
 const Worker = browser
 	? window.Worker

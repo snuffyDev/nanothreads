@@ -1,90 +1,84 @@
 import type { Releaser } from "../models/promises";
-import type { Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
+import type { ArgCallback, Callback, ISemaphore, ISemaphoreQueueEntry } from "../models/semaphore";
 
 export class Semaphore implements ISemaphore {
-	#queue: ISemaphoreQueueEntry[][] = [];
-	#waiting: (() => void)[][] = [];
-	#value;
-	constructor(weight = 3) {
-		this.#value = weight;
+	constructor(private _value: number, private _cancelError: Error = new Error()) {}
+
+	acquire(weight = 1): Promise<[number, Releaser]> {
+		if (weight <= 0) throw new Error(`invalid weight ${weight}: must be positive`);
+
+		return new Promise((resolve, reject) => {
+			if (!this._weightedQueues[weight - 1]) this._weightedQueues[weight - 1] = [];
+			this._weightedQueues[weight - 1].push({ resolve, reject });
+
+			this._dispatch();
+		});
 	}
-	isLocked(): boolean {
-		return this.#value <= 0;
-	}
-	async dispatch<T>(callback: Callback<T>): Promise<T> {
-		const [_, release] = await this.acquire();
+
+	async runExclusive<T>(callback: ArgCallback<T>, weight = 1): Promise<T> {
+		const [value, release] = await this.acquire(weight);
 
 		try {
-			return await callback();
+			return await callback(value);
 		} finally {
-			queueMicrotask(release);
+			release();
 		}
 	}
-	acquire(value: number = 1): Promise<[number, Releaser]> {
-		if (value <= 0) throw new Error(`Value must be greater than 0. Received: #{value}`);
 
-		return new Promise((resolve, reject) => {
-			if (!this.#queue[value - 1]) {
-				this.#queue[value - 1] = [];
-			}
-			this.#queue[value - 1].push({ resolve, reject });
-			this.#dispatch();
+	waitForUnlock(weight = 1): Promise<void> {
+		if (weight <= 0) throw new Error(`invalid weight ${weight}: must be positive`);
+
+		return new Promise((resolve) => {
+			if (!this._weightedWaiters[weight - 1]) this._weightedWaiters[weight - 1] = [];
+			this._weightedWaiters[weight - 1].push(resolve);
+
+			this._dispatch();
 		});
 	}
-	waitForUnlock(value: number | undefined = 1): Promise<void> {
-		if (value <= 0) throw new Error(`Value must be greater than 0. Received: #{value}`);
 
-		return new Promise((resolve, reject) => {
-			if (!this.#waiting[value - 1]) {
-				this.#waiting[value - 1] = [];
-			}
-			this.#waiting[value - 1].push(resolve);
-			queueMicrotask(this.#dispatch);
-		});
+	isLocked(): boolean {
+		return this._value <= 0;
 	}
-	setValue(value: number): void {
-		this.#value = value;
-		this.#dispatch();
-	}
-	release(value?: number | undefined): void {
-		this.#value += value!;
-		this.#dispatch();
-	}
+
 	getValue(): number {
-		return this.#value;
-	}
-	cancel(): void {
-		const length = this.#queue.length;
-		let idx = -1;
-		while (++idx < length) {
-			const queue = this.#queue[idx];
-			const len = queue.length;
-			let pos = -1;
-			while (++pos < len) {
-				queue[pos].reject(null);
-			}
-		}
-		this.#queue = [];
+		return this._value;
 	}
 
-	#dispatch(): void {
-		for (let weight = this.#value; weight > 0; weight--) {
-			const queueEntry = this.#queue[weight - 1]?.shift();
+	setValue(value: number): void {
+		this._value = value;
+		this._dispatch();
+	}
+
+	release(weight = 1): void {
+		if (weight <= 0) throw new Error(`invalid weight ${weight}: must be positive`);
+
+		this._value += weight;
+		this._dispatch();
+	}
+
+	cancel(): void {
+		this._weightedQueues.forEach((queue) => queue.forEach((entry) => entry.reject(this._cancelError)));
+		this._weightedQueues = [];
+	}
+
+	private _dispatch(): void {
+		for (let weight = this._value; weight > 0; weight--) {
+			const queueEntry = this._weightedQueues[weight - 1]?.shift();
 			if (!queueEntry) continue;
 
-			const previousValue = this.#value;
+			const previousValue = this._value;
 			const previousWeight = weight;
 
-			this.#value -= weight;
-			weight = this.#value + 1;
+			this._value -= weight;
+			weight = this._value + 1;
 
-			queueEntry.resolve([previousValue, this.#newReleaser(previousWeight)]);
+			queueEntry.resolve([previousValue, this._newReleaser(previousWeight)]);
 		}
 
-		this.#drainUnlockWaiters();
+		this._drainUnlockWaiters();
 	}
 
-	#newReleaser(weight: number): () => void {
+	private _newReleaser(weight: number): () => void {
 		let called = false;
 
 		return () => {
@@ -95,12 +89,15 @@ export class Semaphore implements ISemaphore {
 		};
 	}
 
-	#drainUnlockWaiters(): void {
-		for (let weight = this.#value; weight > 0; weight--) {
-			if (!this.#waiting[weight - 1]) continue;
+	private _drainUnlockWaiters(): void {
+		for (let weight = this._value; weight > 0; weight--) {
+			if (!this._weightedWaiters[weight - 1]) continue;
 
-			this.#waiting[weight - 1].forEach((waiter) => waiter());
-			this.#waiting[weight - 1] = [];
+			for (let idx = 0; idx < this._weightedWaiters[weight - 1].length; idx++) this._weightedWaiters[weight - 1][idx]();
+			this._weightedWaiters[weight - 1] = [];
 		}
 	}
+
+	private _weightedQueues: Array<Array<ISemaphoreQueueEntry>> = [];
+	private _weightedWaiters: Array<Array<() => void>> = [];
 }

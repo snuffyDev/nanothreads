@@ -1,6 +1,7 @@
 import type { Releaser } from "./promises";
 
 export type Callback<T> = () => Promise<T> | T;
+export type ArgCallback<T> = (value: number) => Promise<T> | T;
 
 export interface ISemaphoreQueueEntry {
 	resolve(result: [number, Releaser]): void;

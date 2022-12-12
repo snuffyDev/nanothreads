@@ -1,71 +1,26 @@
-import { Semaphore, thread, Mutex } from "./src/";
+import { Semaphore, Mutex, Thread } from "./dist";
+import { ThreadPool } from "./dist";
 
-const lock = new Mutex();
+const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 
-type MyArgs = [string, number];
-
-/// You can create a handle to spawn a new thread that accepts the same
-/// argument types across different functions.
-const handle = thread<MyArgs>();
-
-const worker1 = handle.spawn(async (...args) => {});
-
-const worker = thread<string>().spawn(async (url) => {
-	return await fetch(url)
-		.then((res) => res.json())
-		.then((json) => json as { quote: string });
+const pool = new ThreadPool<[string], Promise<{ quote: string }>>({
+	task: async (args) => {
+		return fetch(args)
+			.then((res) => res.json())
+			.then((json) => json as { quote: string });
+	},
+	min: 1,
+	max: 2,
 });
 
-console.log(typeof navigator !== "undefined");
+new Thread<[string], string>((name: string) => {
+	return "Hello " + name;
+});
 
-const sleep = (ms = 1000) =>
-	new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-async function http(url: string) {
-	return await lock.dispatch(async () => {
-		await sleep(2500);
-		//@ts-ignore
-		return await fetch(url).then((res) => res.text());
-	});
-}
-
-async function main() {
-	const url = "https://api.kanye.rest";
-
-	/**
-	 * Testing Threading
-	 * ====
-	 * Simple, easy, quick threading in the browser & Node.js
-	 */
-	const thread_response = await worker.send("https://api.kanye.rest");
-	console.group("Threading");
-	console.log(JSON.parse(thread_response));
-	console.groupEnd();
-	console.group("Semaphore");
-	/**
-	 * Testing Semaphore
-	 * =====
-	 * The code below, when run without `await`, normally would
-	 * immediately send each request without waiting for the others
-	 * to finish.
-	 *
-	 * ```
-	 * const http = async (url: string) => await fetch(url),then((res) => res.text())
-	 * ```
-	 *
-	 * With the Semaphore, we have more control over how the code
-	 * will execute, and when it will execute.
-	 *
-	 * The lock that's used below has a limit of 2
-	 */
-	for (let i = 0; i < 8; i++) {
-		http(url).then((res) => {
-			console.log(res);
-		});
+async function rn() {
+	let runs = 22;
+	for (let idx = 0; idx < runs; idx++) {
+		pool.exec("https://api.kanye.rest").then((res) => res && res.quote && console.log(res.quote));
 	}
-
-	console.groupEnd();
 }
-
-main();
+rn();

@@ -26,3 +26,9 @@ dist-ssr
 pnpm-lock.yaml
 .lapce/*
 .future
+index.js
+.gitignore
+NodeWorker-cjs.ts
+NodeWorker-esm.mts
+BACKUP.old
+browser-test/*
