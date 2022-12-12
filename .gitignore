@@ -31,3 +31,4 @@ index.js
 NodeWorker-cjs.ts
 NodeWorker-esm.mts
 BACKUP.old
+browser-test/*

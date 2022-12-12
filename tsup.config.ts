@@ -65,8 +65,6 @@ export default defineConfig({
 				: ["node:worker_threads", "worker_threads", "https"];
 		opts.format = format;
 		opts.minify = true;
-		opts.define = format === "esm" ? { "process.env.WORKER": "NodeWorker" } : { "process.env.WORKER": "NodeWorker" };
-		opts.inject = (format === "esm" && ["./src/internals/NodeWorker-esm.mjs"]) || ["./src/internals/NodeWorker-cjs.js"];
 		opts.keepNames = true;
 		opts.minifyWhitespace = true;
 		opts.treeShaking = true;

@@ -1,4 +1,6 @@
-class NodeWorker extends global.require("worker_threads").Worker {
+const {Worker} = require("node:worker_threads");
+
+export class NodeWorker extends Worker {
     constructor(src, opts = {}) {
         super(src, opts);
     }

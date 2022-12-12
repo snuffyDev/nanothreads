@@ -5,8 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.1.95",
-	"type": "module",
+	"version": "0.2.20-beta",
 	"source": "./src/index.ts",
 	"description": "a tiny cross-platform Worker & concurrency library",
 	"keywords": [
@@ -23,8 +22,10 @@
 		"package.json"
 	],
 	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
 	"scripts": {
 		"build": "tsup-node",
+		"build:web": "tsup-node --config tsup.config.web.ts",
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
 		"start": "pnpm run build && node --loader=ts-node/esm --experimental-specifier-resolution=node ./index",
 		"format": "prettier --write .",

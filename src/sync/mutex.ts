@@ -10,7 +10,7 @@ export class Mutex extends Semaphore {
 
 abstract class ThreadGuardLock extends Mutex {}
 
-export class ThreadGuard<Args extends any[], Output> extends Thread<Args, Output> {
+export class ThreadGuard<Args extends [...args: unknown[]], Output> extends Thread<Args, Output> {
 	#lock = new Mutex();
 	constructor(func: WorkerThreadFn<Args, Output>, opts: { once?: boolean | undefined } | undefined) {
 		super(func, opts);
@@ -21,9 +21,7 @@ export class ThreadGuard<Args extends any[], Output> extends Thread<Args, Output
 	waitForUnlock(weight = 1) {
 		return this.#lock.waitForUnlock();
 	}
-	async send(data: Args): Promise<Output> {
-		return await this.#lock.runExclusive(async () => {
-			return super.send(data);
-		});
+	send(...data: Args): Promise<Output> {
+		return this.#lock.runExclusive(async () => super.send(...data));
 	}
 }

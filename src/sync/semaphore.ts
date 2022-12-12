@@ -93,7 +93,7 @@ export class Semaphore implements ISemaphore {
 		for (let weight = this._value; weight > 0; weight--) {
 			if (!this._weightedWaiters[weight - 1]) continue;
 
-			this._weightedWaiters[weight - 1].forEach((waiter) => waiter());
+			for (let idx = 0; idx < this._weightedWaiters[weight - 1].length; idx++) this._weightedWaiters[weight - 1][idx]();
 			this._weightedWaiters[weight - 1] = [];
 		}
 	}

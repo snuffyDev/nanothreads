@@ -1,5 +1,4 @@
-const Worker = (await import("worker_threads")).Worker;
-export class NodeWorker extends Worker {
+export class NodeWorker extends (await import('worker_threads')).Worker {
     constructor(src, opts = {}) {
         super(src, opts);
     }

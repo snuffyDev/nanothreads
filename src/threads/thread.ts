@@ -12,8 +12,8 @@ parentPort?.on('message', async ({data}) => {
 	`;
 
 const TEMPLATE_BROWSER = `const res = [];
-    onmessage = async (event) => {
-        const res = await ($1)(event.data);
+    onmessage = async ({ data }) => {
+        const res = await ($1)(data.data);
         postMessage(res);
     };`;
 
@@ -21,24 +21,25 @@ function receive<A = unknown | PromiseLike<unknown>>({ data }: { data: A }): A {
 	return data;
 }
 
-function funcToString<Func extends (...args: any[]) => any>(func: Func): string {
+function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func): string {
 	let func_str = func.toString();
 	if (browser) {
-		return TEMPLATE_BROWSER;
+		return TEMPLATE_BROWSER.replace("$1", func_str);
 	}
 	return TEMPLATE_NODE.replace("$1", func_str);
 }
-//  {resolve, reject}: { resolve: (value?: unknown )=>void, reject: (err: unknown) => void }
-const attachEventListeners = <T extends MessagePort>(
+
+const attachEventListeners = <T extends typeof Worker["prototype"]>(
 	target: T,
-	{ message, error }: { message: (data: MessageEvent<any>) => void; error: (err: unknown) => void },
+	{ message, error }: { message: (data: MessageEvent<unknown>) => void; error: (err: unknown) => void },
 ) => {
 	target.addEventListener("message", message, { once: true });
 
 	target.addEventListener("messageerror", error);
 	target.addEventListener("error", error);
 };
-export class Thread<Args extends any[], Output> implements IThread<Args, Output> {
+
+export class Thread<Args extends [...args: unknown[]] | unknown, Output> implements IThread<Args, Output> {
 	#handle: typeof Worker["prototype"];
 	// stringified version of the callback fn
 	#src: string;
@@ -51,9 +52,10 @@ export class Thread<Args extends any[], Output> implements IThread<Args, Output>
 		this.#src = browser ? URL.createObjectURL(new Blob([func_str], { type: "text/javascript" })) : func_str;
 
 		const options: WorkerOptions | WON = !browser ? { eval: true } : {};
+
 		this.#handle = new Worker(this.#src, options);
 	}
-	send(data: [...args: Args]) {
+	send(...data: [...args: unknown[]] & unknown) {
 		return new Promise<Output>((resolve: (value: Output) => void, reject) => {
 			const message = (data: MessageEvent<Output>) => {
 				resolve(receive<Output>(data));
