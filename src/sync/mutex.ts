@@ -1,6 +1,7 @@
 import { Thread } from "../threads";
 import { Semaphore } from "./semaphore";
 import type { WorkerThreadFn, IThread } from "../models";
+import { yieldMicrotask } from "../utils";
 
 export class Mutex extends Semaphore {
 	constructor() {
@@ -21,7 +22,11 @@ export class ThreadGuard<Args extends [...args: unknown[]], Output> extends Thre
 	waitForUnlock(weight = 1) {
 		return this.#lock.waitForUnlock();
 	}
-	send(...data: Args): Promise<Output> {
-		return this.#lock.runExclusive(async () => super.send(...data));
+	async send(...data: Args): Promise<Output> {
+		const [, release] = await this.#lock.acquire();
+		const value = await super.send(...data);
+		release();
+		await yieldMicrotask();
+		return value;
 	}
 }

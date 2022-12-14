@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.2.22",
+	"version": "0.2.24",
 	"source": "./src/index.ts",
 	"description": "a tiny cross-platform Worker & concurrency library",
 	"keywords": [
@@ -21,7 +21,7 @@
 		"dist",
 		"package.json"
 	],
-	"main": "./dist/index.js",
+	"main": "./dist/index.mjs",
 	"module": "./dist/index.mjs",
 	"scripts": {
 		"build": "tsup-node",
@@ -33,28 +33,26 @@
 	},
 	"exports": {
 		".": {
-			"import": "./dist/index.js",
-			"require": "./dist/index.cjs",
-			"browser": "./dist/index.js",
-			"default": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"browser": "./dist/index.mjs",
+			"default": "./dist/index.mjs",
 			"types": "./dist/index.d.ts"
 		},
 		"./sync": {
-			"import": "./dist/sync/index.js",
-			"require": "./dist/sync/index.cjs",
-			"browser": "./dist/sync/index.js",
-			"default": "./dist/sync/index.js",
+			"import": "./dist/sync/index.mjs",
+			"browser": "./dist/sync/index.mjs",
+			"default": "./dist/sync/index.mjs",
 			"types": "./dist/sync/index.d.ts"
 		},
 		"./internals": {
-			"import": "./dist/internals/index.js",
-			"require": "./dist/internals/index.cjs",
+			"import": "./dist/internals/index.mjs",
 			"default": "./dist/internals/index.cs",
 			"types": "./dist/internals/index.d.ts"
 		},
 		"./models": {
 			"types": "./dist/models/index.d.ts"
 		},
+		"./utils.mjs": "./dist/utils.mjs",
 		"./package.json": "./package.json"
 	},
 	"size-limit": [
