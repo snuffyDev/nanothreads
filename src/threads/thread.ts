@@ -1,7 +1,7 @@
 import { StatusCode } from "../models";
 import type { IThread as IThread, WorkerThreadFn } from "../models/thread";
 import { browser } from "../internals";
-import { Worker } from "../internals/NodeWorker";
+import { Worker as WorkerImpl, type IWorkerImpl, type IWorkerOptions } from "../internals/NodeWorker";
 import type { WorkerOptions as WON } from "worker_threads";
 
 const TEMPLATE_NODE = `const { parentPort, workerData } = require('worker_threads');
@@ -29,7 +29,7 @@ function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func):
 	return TEMPLATE_NODE.replace("$1", func_str);
 }
 
-const attachEventListeners = <T extends typeof Worker["prototype"]>(
+const attachEventListeners = <T extends IWorkerImpl>(
 	target: T,
 	{ message, error }: { message: (data: MessageEvent<unknown>) => void; error: (err: unknown) => void },
 ) => {
@@ -40,7 +40,7 @@ const attachEventListeners = <T extends typeof Worker["prototype"]>(
 };
 
 export class Thread<Args extends [...args: unknown[]] | unknown, Output> implements IThread<Args, Output> {
-	#handle: typeof Worker["prototype"];
+	#handle: InstanceType<typeof WorkerImpl>;
 	// stringified version of the callback fn
 	#src: string;
 
@@ -51,11 +51,11 @@ export class Thread<Args extends [...args: unknown[]] | unknown, Output> impleme
 
 		this.#src = browser ? URL.createObjectURL(new Blob([func_str], { type: "text/javascript" })) : func_str;
 
-		const options: WorkerOptions | WON = !browser ? { eval: true } : {};
+		const options = !browser ? { eval: true } : {};
 
-		this.#handle = new Worker(this.#src, options);
+		this.#handle = new WorkerImpl(this.#src, options);
 	}
-	send(...data: [...args: unknown[]] & unknown) {
+	send(...data: [...args: unknown[]] & unknown): Promise<Output> {
 		return new Promise<Output>((resolve: (value: Output) => void, reject) => {
 			const message = (data: MessageEvent<Output>) => {
 				resolve(receive<Output>(data));

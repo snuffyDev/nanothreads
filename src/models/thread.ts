@@ -3,9 +3,11 @@ import type { StatusCode } from "./statuses";
 export type GetReturnType<T> = T extends (...args: unknown[]) => Promise<ReturnType<infer Value>>
 	? ReturnType<Value>
 	: T;
-export type WorkerThreadFn<Args extends [...args: unknown[]] | unknown, Output = unknown> = (
-	...args: Args extends unknown[] ? Args : [unknown]
-) => Output;
+
+export type WorkerThreadFn<Args extends any | any[], Output = unknown> = (
+	...args: Args extends [...args: infer A] ? A : [Args]
+) => Output extends Promise<infer R> ? Promise<Awaited<R>> : Output;
+
 export type UnsubscribeFn = () => void;
 export interface IThreadOptions {
 	once?: boolean;

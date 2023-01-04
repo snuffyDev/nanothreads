@@ -1,6 +1,6 @@
 import { Thread } from "../threads";
 import { Semaphore } from "./semaphore";
-import type { WorkerThreadFn, IThread } from "../models";
+import type { WorkerThreadFn } from "../models";
 import { yieldMicrotask } from "../utils";
 
 export class Mutex extends Semaphore {
@@ -9,12 +9,11 @@ export class Mutex extends Semaphore {
 	}
 }
 
-abstract class ThreadGuardLock extends Mutex {}
-
-export class ThreadGuard<Args extends [...args: unknown[]], Output> extends Thread<Args, Output> {
-	#lock = new Mutex();
+export class ThreadGuard<Args extends any | any[], Output = unknown> extends Thread<Args, Output> {
+	#lock: Mutex;
 	constructor(func: WorkerThreadFn<Args, Output>, opts: { once?: boolean | undefined } | undefined) {
 		super(func, opts);
+		this.#lock = new Mutex();
 	}
 	isLocked() {
 		return this.#lock.isLocked();
@@ -22,11 +21,14 @@ export class ThreadGuard<Args extends [...args: unknown[]], Output> extends Thre
 	waitForUnlock(weight = 1) {
 		return this.#lock.waitForUnlock();
 	}
-	async send(...data: Args): Promise<Output> {
-		const [, release] = await this.#lock.acquire();
-		const value = await super.send(...data);
-		release();
-		await yieldMicrotask();
-		return value;
+	async send(...data: Args extends [...args: infer A] ? A : [Args]): Promise<Awaited<Output>> {
+		const [_, release] = await this.#lock.acquire();
+		try {
+			const value = await super.send(...data);
+			return value;
+		} finally {
+			release();
+			await yieldMicrotask();
+		}
 	}
 }

@@ -1,7 +1,12 @@
-export class NodeWorker extends (await import('worker_threads')).Worker {
+import { Worker as _Worker } from 'worker_threads';
+export class Worker extends _Worker {
     constructor(src, opts = {}) {
         super(src, opts);
     }
+		once(event, cb) {
+			super.once(event, cb);
+			return this;
+		}
     addEventListener(event, cb, opts) {
         if (!opts?.once) {
             this.once(event, cb);

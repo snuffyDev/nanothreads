@@ -1,2 +1,3 @@
 import { browser } from './../internals';
-export const BroadcastChannel = browser ? window.BroadcastChannel : require("worker_threads").BroadcastChannel;
+//@ts-expect-error
+export const BroadcastChannel = browser ? window.BroadcastChannel : NodeBroadcastChannel;

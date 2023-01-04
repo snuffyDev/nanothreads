@@ -1,30 +1,44 @@
 import { browser } from "./utils";
 export interface IWorkerOptions extends WorkerOptions {}
 
-const Worker = browser
-	? window.Worker
-	: class Worker extends global.require("worker_threads").Worker {
-			constructor(src: string | URL, opts: IWorkerOptions & { eval?: boolean } = {}) {
-				super(src, opts);
-			}
+class BrowserImpl extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {
+	constructor(src: string | URL, opts: (IWorkerOptions & { eval?: boolean | undefined }) | undefined = {}) {
+		super(src, opts);
+	}
 
-			addEventListener<
-				Event extends keyof WorkerEventMap = keyof WorkerEventMap,
-				Callback extends (...args: any) => void = (event: WorkerEventMap[Event]) => void,
-			>(event: Event, cb: Callback, opts?: AddEventListenerOptions) {
-				if (!opts?.once) {
-					this.once(event, cb);
-				} else {
-					this.on(event, cb);
-				}
-			}
+	postMessage(
+		...args:
+			| [message: any, transfer: Transferable[]]
+			| [message: any, options?: StructuredSerializeOptions | undefined]
+			| [value: any, transferList?: readonly import("worker_threads").TransferListItem[] | undefined]
+	): void {
+		//@ts-expect-error
+		super.postMessage(...args);
+	}
 
-			removeEventListener<
-				Event extends keyof WorkerEventMap = keyof WorkerEventMap,
-				Callback extends (...args: any) => void = (event: WorkerEventMap[Event]) => void,
-			>(event: Event, cb: Callback, opts?: EventListenerOptions | undefined) {
-				this.off(event, cb);
+	addEventListener<
+		Event extends keyof WorkerEventMap = keyof WorkerEventMap,
+		Callback extends (...args: any) => void = (event: WorkerEventMap[Event]) => void,
+	>(event: Event, cb: Callback, opts?: AddEventListenerOptions) {
+		if (!opts?.once) {
+			if (browser) {
+				super.addEventListener(event, cb, Object.assign({}, opts, { once: true }));
+			} else {
+				//@ts-expect-error
+				super.once(event, cb);
 			}
-	  };
+		} else {
+			super.addEventListener(event, cb);
+		}
+	}
 
-export { Worker };
+	removeEventListener<
+		Event extends keyof WorkerEventMap = keyof WorkerEventMap,
+		Callback extends (...args: any) => void = (event: WorkerEventMap[Event]) => void,
+	>(event: Event, cb: Callback, opts?: EventListenerOptions | undefined) {
+		super.removeEventListener(event, cb);
+	}
+}
+const _Worker = BrowserImpl;
+export type IWorkerImpl = BrowserImpl;
+export { _Worker as Worker };

@@ -2,9 +2,9 @@
 	"compilerOptions": {
 		"target": "ESNext",
 		"useDefineForClassFields": true,
-		"module": "ESNext",
+		"module": "CommonJS",
 		"lib": ["ESNext", "WebWorker", "DOM", "ES2022.Array", "es2022"],
-		"moduleResolution": "node",
+		"moduleResolution": "NodeNext",
 		"strict": true,
 		"sourceMap": true,
 		"resolveJsonModule": true,
@@ -30,6 +30,6 @@
 		"src/internals/NodeWorker-esm.mjs",
 		"src/internals/NodeWorker-cjs.js",
 		"dist/*",
-		"index.mtss"
+		"index.ts"
 	]
 }

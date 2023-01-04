@@ -1,53 +1,57 @@
-import { Mutex, Semaphore, ThreadGuard } from "../sync";
+import { ThreadGuard } from "../sync";
 import type { WorkerThreadFn } from "../models";
-import { Thread } from "./thread";
+import { yieldMicrotask } from "../utils";
 
-interface Indexable<T> {
-	[idx: number]: T[keyof T];
-}
+const TASK_SYM: unique symbol = Symbol("#TASK");
 
-type BusyThreadLock<T> = { resolve: (value: T) => void; reject: (reason?: unknown) => void };
-
-export class ThreadPool<Arguments extends [...args: unknown[]], Output> {
-	#threads: ThreadGuard<Arguments, Output>[] = [];
+type ReturnValue<P> = P extends Promise<any> ? Promise<P> : Promise<P> | P;
+export class ThreadPool<Arguments extends any | any[], Output = unknown> {
+	#threads: ThreadGuard<Arguments, ReturnValue<Output>>[] = [];
 	#curThreadNum = -1;
 	#max = 0;
-	#task: WorkerThreadFn<Arguments, Output>;
+	[TASK_SYM]: WorkerThreadFn<Arguments, ReturnValue<Output>>;
 
-	constructor({ task, min = 1, max = 4 }: { task: WorkerThreadFn<Arguments, Output>; min: number; max: number }) {
-		if (min < 1) min = 1;
-		if (max < min) max = min + 1;
+	constructor({ task, max = 4 }: { task: WorkerThreadFn<Arguments, ReturnValue<Output>>; max: number }) {
+		// Sets the thread count
+		this.#max = Math.max(max, 1);
 
-		this.#max = max;
-		this.#task = task;
-		this.#threads = Array(max)
-			.fill(false)
-			.map(() => new ThreadGuard<Arguments, Output>(this.#task, { once: false }));
+		this[TASK_SYM] = task;
+
+		for (let idx = -1; ++idx < this.#max; )
+			this.#threads[idx] = new ThreadGuard<Arguments, ReturnValue<Output>>(this[TASK_SYM], { once: false });
 	}
+
 	private nextInt() {
 		return ++this.#curThreadNum % this.#max;
 	}
+
+	/** Kill a specific thread (cannot be undone!) */
 	public kill(num: number) {
 		if (!this.#threads[num]) return;
 		const thread = this.#threads.splice(num, 1);
 		return thread[0].terminate();
 	}
 
+	/** Kills each thread in the pool */
 	public async terminate() {
 		await Promise.all(this.#threads.map((thread) => thread.terminate()));
 		this.#threads.length = 0;
 	}
 
-	public async exec(...args: Arguments): Promise<Awaited<Output | void>> {
+	/** Executes the `task` passed in to the ThreadPool's contstructor */
+	public async exec(
+		...args: Arguments extends [...args: infer A] ? A : [Arguments]
+	): Promise<Awaited<ReturnValue<Output>>> {
 		const num = this.nextInt();
 		const thread = this.#threads[num];
 
 		if (!thread) throw Error("No thread!");
 		try {
-			return await thread.send(...args);
+			return thread.send(...args);
 		} catch (err) {
-			console.error(err);
+			throw new Error(err as string);
 		} finally {
+			await yieldMicrotask();
 		}
 	}
 }

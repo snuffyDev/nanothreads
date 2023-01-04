@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.2.24",
+	"version": "0.2.30",
 	"source": "./src/index.ts",
 	"description": "a tiny cross-platform Worker & concurrency library",
 	"keywords": [
@@ -21,39 +21,30 @@
 		"dist",
 		"package.json"
 	],
-	"main": "./dist/index.mjs",
-	"module": "./dist/index.mjs",
+	"main": "./dist/index.cjs.js",
+	"types": "./dist/index.d.ts",
+	"type": "module",
 	"scripts": {
-		"build": "tsup-node",
-		"build:web": "tsup-node --config tsup.config.web.ts",
+		"build": "node ./build.mjs && pnpm run build:dts",
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
-		"start": "pnpm run build && node --loader=ts-node/esm --experimental-specifier-resolution=node ./index",
+		"build:dts": "tsc --moduleResolution node --target ESNext -m esnext --declaration true --emitDeclarationOnly --rootDir ./src/ --outDir dist",
+		"run:esm:node-demo": "node --loader=ts-node/esm --experimental-specifier-resolution=node ./index",
+		"run:cjs:node-demo": "node --es-module-specifier-resolution=node ./index.cjs.js",
+		"start": "pnpm run build && pnpm run run:esm:node-demo",
 		"format": "prettier --write .",
 		"test": "size-limit"
 	},
 	"exports": {
-		".": {
-			"import": "./dist/index.mjs",
-			"browser": "./dist/index.mjs",
-			"default": "./dist/index.mjs",
+		"node": {
+			"node": "./dist/index.cjs.js",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs.js",
 			"types": "./dist/index.d.ts"
 		},
-		"./sync": {
-			"import": "./dist/sync/index.mjs",
-			"browser": "./dist/sync/index.mjs",
-			"default": "./dist/sync/index.mjs",
-			"types": "./dist/sync/index.d.ts"
-		},
-		"./internals": {
-			"import": "./dist/internals/index.mjs",
-			"default": "./dist/internals/index.cs",
-			"types": "./dist/internals/index.d.ts"
-		},
-		"./models": {
-			"types": "./dist/models/index.d.ts"
-		},
-		"./utils.mjs": "./dist/utils.mjs",
-		"./package.json": "./package.json"
+		"require": "./dist/index.cjs.js",
+		"browser": "./dist/index.web.js",
+		"module": "./dist/index.js",
+		"types": "./dist/index.d.ts"
 	},
 	"size-limit": [
 		{
@@ -65,12 +56,11 @@
 	"devDependencies": {
 		"@size-limit/preset-small-lib": "^8.1.0",
 		"@types/node": "^18.8.3",
-		"size-limit": "^8.1.0",
-		"typescript": "^4.9.3"
-	},
-	"dependencies": {
+		"esbuild": "^0.16.13",
 		"prettier": "^2.8.0",
+		"size-limit": "^8.1.0",
 		"ts-node": "^10.9.1",
-		"tsup": "^6.5.0"
+		"tsup": "^6.5.0",
+		"typescript": "^4.9.3"
 	}
 }
