@@ -1,5 +1,5 @@
-const { Semaphore, Mutex, Thread } = require("./dist/index.cjs");;
-const { ThreadPool } = require("./dist/index.cjs.js");
+const { Semaphore, Mutex, Thread } = require("./dist/index");;
+const { ThreadPool } = require("./dist/index");
 const FASTA = (num) => {
 	var last = 42,
 		A = 3877,
@@ -99,7 +99,6 @@ const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 
 const pool = new ThreadPool({
 	task: FASTA,
-	min: 1,
 	max: 2,
 });
 

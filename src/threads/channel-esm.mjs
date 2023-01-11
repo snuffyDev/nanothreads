@@ -1,3 +1,3 @@
-import { BroadcastChannel } from "worker_threads";
+import { BroadcastChannel as NBC } from "worker_threads";
 
-export const NodeBroadcastChannel = BroadcastChannel
+export const BroadcastChannel = NBC;

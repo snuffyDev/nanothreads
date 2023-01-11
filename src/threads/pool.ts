@@ -4,21 +4,21 @@ import { yieldMicrotask } from "../utils";
 
 const TASK_SYM: unique symbol = Symbol("#TASK");
 
-type ReturnValue<P> = P extends Promise<any> ? Promise<P> : Promise<P> | P;
+type MaybePromise<P> = P | Promise<P>;
 export class ThreadPool<Arguments extends any | any[], Output = unknown> {
-	#threads: ThreadGuard<Arguments, ReturnValue<Output>>[] = [];
+	#threads: ThreadGuard<Arguments, MaybePromise<Output>>[] = [];
 	#curThreadNum = -1;
 	#max = 0;
-	[TASK_SYM]: WorkerThreadFn<Arguments, ReturnValue<Output>>;
+	[TASK_SYM]: WorkerThreadFn<Arguments, MaybePromise<Output>>;
 
-	constructor({ task, max = 4 }: { task: WorkerThreadFn<Arguments, ReturnValue<Output>>; max: number }) {
+	constructor({ task, max = 4 }: { task: WorkerThreadFn<Arguments, MaybePromise<Output>>; max: number }) {
 		// Sets the thread count
 		this.#max = Math.max(max, 1);
 
 		this[TASK_SYM] = task;
 
 		for (let idx = -1; ++idx < this.#max; )
-			this.#threads[idx] = new ThreadGuard<Arguments, ReturnValue<Output>>(this[TASK_SYM], { once: false });
+			this.#threads[idx] = new ThreadGuard<Arguments, MaybePromise<Output>>(this[TASK_SYM], { once: false });
 	}
 
 	private nextInt() {
@@ -39,19 +39,14 @@ export class ThreadPool<Arguments extends any | any[], Output = unknown> {
 	}
 
 	/** Executes the `task` passed in to the ThreadPool's contstructor */
-	public async exec(
-		...args: Arguments extends [...args: infer A] ? A : [Arguments]
-	): Promise<Awaited<ReturnValue<Output>>> {
-		const num = this.nextInt();
-		const thread = this.#threads[num];
-
-		if (!thread) throw Error("No thread!");
+	public async exec(...args: Arguments extends [...args: infer A] ? A : [Arguments]): Promise<Output> {
 		try {
-			return thread.send(...args);
+			const num = this.nextInt();
+			const thread = this.#threads[num];
+			if (!thread) throw Error("No thread!");
+			return (thread.send(...args)) as Output;
 		} catch (err) {
 			throw new Error(err as string);
-		} finally {
-			await yieldMicrotask();
 		}
 	}
 }

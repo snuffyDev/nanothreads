@@ -31,7 +31,7 @@ try {
 function buildWeb() {
 
 /** @type {import('esbuild').BuildOptions} */
-	const OPTS = {treeShaking: true, format:'esm',platform:'browser',outfile: pkg.exports.browser}
+	const OPTS = {treeShaking: true, format:'esm',platform:'browser',outfile: pkg.exports['.'].browser.browser}
 
 	const o = Object.assign({}, DEFAULT_OPTIONS, OPTS);
 	buildSync(o);
@@ -40,7 +40,7 @@ function buildWeb() {
 function buildNodeCJS(){
 
 /** @type {import('esbuild').BuildOptions} */
-	const OPTS = {treeShaking: true, format:'cjs', outfile: pkg.exports['node'].require,platform:'node', inject: ["./src/internals/NodeWorker-cjs.js","./src/threads/channel-cjs.js"],tsconfig: './tsconfig.node.json'}
+	const OPTS = {treeShaking: true, format:'cjs', outfile: pkg.exports['.'].require,platform:'node', inject: ["./src/internals/NodeWorker-cjs.js","./src/threads/channel-cjs.js"],tsconfig: './tsconfig.node.json'}
 
 	const o = Object.assign({}, DEFAULT_OPTIONS, OPTS);
 	buildSync(o);
@@ -49,7 +49,7 @@ function buildNodeCJS(){
 function buildNodeESM() {
 
 /** @type {import('esbuild').BuildOptions} */
-	const OPTS = {treeShaking: true, format:'esm',outfile: pkg.exports['node'].import,platform:'node',inject: ["./src/internals/NodeWorker-esm.mjs","./src/threads/channel-esm.mjs"]}
+	const OPTS = {treeShaking: true, format:'esm',outfile: pkg.exports['.'].import.node,platform:'node',inject: ["./src/internals/NodeWorker-esm.mjs","./src/threads/channel-esm.mjs"]}
 
 	const o = Object.assign({}, DEFAULT_OPTIONS, OPTS, ESM_NODE_REQUIRE);
 	buildSync(o);

@@ -1,3 +1,5 @@
 import { browser } from './../internals';
-//@ts-expect-error
-export const BroadcastChannel = browser ? window.BroadcastChannel : NodeBroadcastChannel;
+//@ts-ignore
+const _BroadcastChannel = browser ? window.BroadcastChannel : BroadcastChannel;
+
+export { _BroadcastChannel as BroadcastChannel }

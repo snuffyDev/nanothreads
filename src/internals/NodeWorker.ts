@@ -1,16 +1,16 @@
 import { browser } from "./utils";
 export interface IWorkerOptions extends WorkerOptions {}
 
-class BrowserImpl extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {
+class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {
 	constructor(src: string | URL, opts: (IWorkerOptions & { eval?: boolean | undefined }) | undefined = {}) {
 		super(src, opts);
 	}
 
 	postMessage(
 		...args:
-			| [message: any, transfer: Transferable[]]
-			| [message: any, options?: StructuredSerializeOptions | undefined]
-			| [value: any, transferList?: readonly import("worker_threads").TransferListItem[] | undefined]
+			| [message: { data: T }, transfer: Transferable[]]
+			| [message: { data: T }, options?: StructuredSerializeOptions | undefined]
+			| [value: { data: T }, transferList?: readonly import("worker_threads").TransferListItem[] | undefined]
 	): void {
 		//@ts-expect-error
 		super.postMessage(...args);
@@ -22,13 +22,17 @@ class BrowserImpl extends Worker implements Pick<Worker & import("worker_threads
 	>(event: Event, cb: Callback, opts?: AddEventListenerOptions) {
 		if (!opts?.once) {
 			if (browser) {
-				super.addEventListener(event, cb, Object.assign({}, opts, { once: true }));
+				super.addEventListener(event, cb, Object.assign({}, opts, { once: false }));
+			} else {
+				super.addEventListener(event, cb);
+			}
+		} else {
+			if (browser) {
+				super.addEventListener(event, cb, Object.assign({}, opts, { once: false }));
 			} else {
 				//@ts-expect-error
 				super.once(event, cb);
 			}
-		} else {
-			super.addEventListener(event, cb);
 		}
 	}
 
@@ -40,5 +44,5 @@ class BrowserImpl extends Worker implements Pick<Worker & import("worker_threads
 	}
 }
 const _Worker = BrowserImpl;
-export type IWorkerImpl = BrowserImpl;
+export type IWorkerImpl<T> = BrowserImpl<T>;
 export { _Worker as Worker };

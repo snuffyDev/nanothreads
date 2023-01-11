@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Semaphore, Mutex, Thread } from "./dist";
 import { ThreadPool } from "./dist";
 export const FASTA = (num: number) => {
@@ -5,7 +6,7 @@ export const FASTA = (num: number) => {
 		A = 3877,
 		C = 29573,
 		M = 139968;
-
+	if (num % 2) throw new Error("Error!!!!");
 	function rand(max: number) {
 		last = (last * A + C) % M;
 		return (max * last) / M;
@@ -97,24 +98,26 @@ export const FASTA = (num: number) => {
 
 const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 
-const pool = new ThreadPool<number, string[]>({
-	task: FASTA,
-	max: 2,
+const pool = new ThreadPool<[number], number>({
+	task: (data) => {
+		console.log("DATA", ...data);
+		return data;
+	},
+	max: 4,
 });
-pool.exec(0).then((r) => {
-	if (r) r;
-});
-
-new Thread<string | Blob, string>((name) => {
-	return "Hello " + name;
-}).send();
+new Thread<string | Blob, string>(
+	(name) => {
+		return "Hello " + name;
+	},
+	{ once: true },
+).send();
 
 async function rn() {
 	let runs = 5;
 	for (let idx = 0; idx < runs; idx++) {
-		pool.exec(idx + 1).then((res) => {
-			console.log(JSON.stringify(res));
-		});
+		// console.log("running thread", idx);
+		const test = pool.exec(idx + 1);
+		test.then((r) => console.log("test", r));
 	}
 }
 rn();

@@ -1,18 +1,21 @@
 # nanothreads
 
-A powerful Worker-based multi-threading library for the browser, and Node.js
+A powerful Worker-based multi-threading library for the browser and Node.js
+
+> Nanothreads is only 2.19KB, making it a _super_ tiny alternative to [tinypool](https://github.com/tinylibs/tinypool),
+> and others!
 
 ## Features
 
 - Spawn your worker threads using actual functions
-- Tiny bundle size - no bloat!
+- Entire library is 2.19KB - no bloat!
 - 100% Fully Typed
 - Unified API, using the library is exactly the same in both the browser and in Node.
 
 ## Install
 
-```bsh
-npm  install nanothreads
+```
+npm install nanothreads
 
 pnpm install nanothreads
 
@@ -56,6 +59,10 @@ for (let idx = 0; idx < 10; idx++) {
 
 // Returns: "Hello Kanye"
 const greetings = await thread.send("Kanye");
+
+// Cleanup when done!
+await thread.terminate();
+await pool.terminate();
 ```
 
 ## Getting started
