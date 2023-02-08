@@ -12,9 +12,6 @@ jobs:
   benchmark:
     name: Run JavaScript benchmark example
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./benchmarks
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
@@ -24,14 +21,14 @@ jobs:
         with:
           node-version: '18'
       - name: Run benchmark
-        run: pnpm install && pnpm run run:threadpool | tee output.txt
+        run: pnpm install && cd benchmarks && pnpm run run:threadpool | tee output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Threadpool Benchmark
           tool: 'benchmarkjs'
-          output-file-path: output.txt
+          output-file-path: benchmarks/output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           # Show alert with commit comment on detecting possible performance regression
