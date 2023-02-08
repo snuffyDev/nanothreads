@@ -1,4 +1,4 @@
-name: Benchmark.js Example
+name: Threadpool Benchmark
 on:
   push:
     branches:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
       - name: Run benchmark
-        run: cd benchmark && npm install && node bench.mjs | tee output.txt
+        run: cd ./benchmarks && npm install && node bench.mjs | tee output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
