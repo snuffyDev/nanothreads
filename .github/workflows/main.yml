@@ -1,5 +1,6 @@
 name: Threadpool Benchmark
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -21,7 +22,7 @@ jobs:
         with:
           node-version: '18'
       - name: Run benchmark
-        run: pnpm install && pnpm run build && cd benchmarks && pnpm install && pnpm run run:threadpool | tee output.txt
+        run: pnpm install && pnpm run build && cd benchmarks && pnpm install && pnpm run run:threadpool | tee ./output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
