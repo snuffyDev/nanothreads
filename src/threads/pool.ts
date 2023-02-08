@@ -1,28 +1,31 @@
-import { ThreadGuard } from "../sync";
+import { Thread } from "./thread";
 import type { WorkerThreadFn } from "../models";
-import { yieldMicrotask } from "../utils";
+
+type MaybePromise<P> = P | Promise<P>;
 
 const TASK_SYM: unique symbol = Symbol("#TASK");
 
-type MaybePromise<P> = P | Promise<P>;
-export class ThreadPool<Arguments extends any | any[], Output = unknown> {
-	#threads: ThreadGuard<Arguments, MaybePromise<Output>>[] = [];
+type ThreadArgs<T> = T | [...args: T[]];
+export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
+	#threads: Thread<Arguments, MaybePromise<Output>>[] = [];
 	#curThreadNum = -1;
 	#max = 0;
-	[TASK_SYM]: WorkerThreadFn<Arguments, MaybePromise<Output>>;
 
+	private [TASK_SYM]: WorkerThreadFn<Arguments, MaybePromise<Output>>;
 	constructor({ task, max = 4 }: { task: WorkerThreadFn<Arguments, MaybePromise<Output>>; max: number }) {
 		// Sets the thread count
 		this.#max = Math.max(max, 1);
-
+		this.#curThreadNum = this.#max - 1;
 		this[TASK_SYM] = task;
 
-		for (let idx = -1; ++idx < this.#max; )
-			this.#threads[idx] = new ThreadGuard<Arguments, MaybePromise<Output>>(this[TASK_SYM], { once: false });
+		for (let idx = -1; ++idx < this.#max; ) {
+			this.#threads[idx] = new Thread<Arguments, MaybePromise<Output>>(this[TASK_SYM], { once: false });
+		}
 	}
 
-	private nextInt() {
-		return ++this.#curThreadNum % this.#max;
+	private nextInt(value = 1) {
+		this.#curThreadNum = (this.#curThreadNum - value) & (this.#max - 1);
+		return this.#curThreadNum;
 	}
 
 	/** Kill a specific thread (cannot be undone!) */
@@ -34,19 +37,16 @@ export class ThreadPool<Arguments extends any | any[], Output = unknown> {
 
 	/** Kills each thread in the pool */
 	public async terminate() {
-		await Promise.all(this.#threads.map((thread) => thread.terminate()));
+		for (const thread of this.#threads) {
+			await thread.terminate();
+		}
 		this.#threads.length = 0;
 	}
 
 	/** Executes the `task` passed in to the ThreadPool's contstructor */
-	public async exec(...args: Arguments extends [...args: infer A] ? A : [Arguments]): Promise<Output> {
-		try {
-			const num = this.nextInt();
-			const thread = this.#threads[num];
-			if (!thread) throw Error("No thread!");
-			return (thread.send(...args)) as Output;
-		} catch (err) {
-			throw new Error(err as string);
-		}
+	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
+		if (this.#threads.length === 0) throw new Error("Cannot execute a terminated thread pool.");
+
+		return Promise.resolve(this.#threads[this.nextInt()]).then((t) => t.send(...args) as Promise<Output>);
 	}
 }

@@ -1,2 +1,2 @@
-export { Mutex, ThreadGuard } from './mutex';
-export { Semaphore } from './semaphore';
+export { Queue } from "./queue";
+export { Semaphore } from "./semaphore";

@@ -1,3 +1,3 @@
-const { BroadcastChannel: NBC } = require("worker_threads");
+const { MessageChannel: MC } = require("worker_threads");
 
-export const BroadcastChannel = NBC;
+export const MessageChannel = MC;

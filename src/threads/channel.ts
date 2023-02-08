@@ -1,5 +1,5 @@
-import { browser } from './../internals';
+import { browser } from "./../internals";
 //@ts-ignore
-const _BroadcastChannel = browser ? window.BroadcastChannel : BroadcastChannel;
+const _MessageChannel = browser ? window.MessageChannel : MessageChannel;
 
-export { _BroadcastChannel as BroadcastChannel }
+export { _MessageChannel as MessageChannel };

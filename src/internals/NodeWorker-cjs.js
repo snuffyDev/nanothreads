@@ -1,20 +1,19 @@
 const { Worker: _Worker } = require("node:worker_threads");
-
+/** @internal */
 export class Worker extends _Worker {
-	#messageRef = [];
-	#errorRef = [];
 	/**
 	 * @param {string | import("url").URL} src
 	 */
 	constructor(src, opts = {}) {
 		super(src, opts);
+		const that = this;
+		this.on("message", (m) => this.onmessage?.(m));
 	}
-
+	onmessage = (e) => {};
 	terminate() {
-		for (const c of this.#messageRef) this.off('message', c)
-		for (const c of this.#errorRef) this.off('error', c)
-
-		return this.terminate();
+		const that = this;
+		super.off("message", that.onmessage);
+		return super.terminate();
 	}
 
 	/**
@@ -32,8 +31,6 @@ export class Worker extends _Worker {
 	 * @param {{ once: any; }} opts
 	 */
 	addEventListener(event, cb, opts) {
-		if (event === 'error') this.#errorRef.push(cb);
-		else if (event === 'message') this.#messageRef.push(cb);
 		if (!opts?.once) {
 			this.once(event, cb);
 		} else {
@@ -50,5 +47,3 @@ export class Worker extends _Worker {
 		this.off(event, cb);
 	}
 }
-
-

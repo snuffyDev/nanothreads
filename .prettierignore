@@ -2,3 +2,5 @@ pnpm-lock.yaml
 node_modules/**
 /dist/**
 .vscode/**
+docs/**
+browser-test/**

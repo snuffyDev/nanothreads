@@ -1,6 +1,7 @@
 import { browser } from "./utils";
+/** @internal */
 export interface IWorkerOptions extends WorkerOptions {}
-
+/** @internal */
 class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {
 	constructor(src: string | URL, opts: (IWorkerOptions & { eval?: boolean | undefined }) | undefined = {}) {
 		super(src, opts);
@@ -8,9 +9,12 @@ class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_thre
 
 	postMessage(
 		...args:
-			| [message: { data: T }, transfer: Transferable[]]
-			| [message: { data: T }, options?: StructuredSerializeOptions | undefined]
-			| [value: { data: T }, transferList?: readonly import("worker_threads").TransferListItem[] | undefined]
+			| [message?: { port: MessagePort } | { data: T }, transfer?: Transferable[]]
+			| [message?: { port: MessagePort } | { data: T }, options?: StructuredSerializeOptions | undefined]
+			| [
+					value?: { port: MessagePort } | { data: T },
+					transferList?: readonly import("worker_threads").TransferListItem[] | undefined,
+			  ]
 	): void {
 		//@ts-expect-error
 		super.postMessage(...args);

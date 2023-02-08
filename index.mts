@@ -100,24 +100,31 @@ const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 
 const pool = new ThreadPool<[number], number>({
 	task: (data) => {
-		console.log("DATA", ...data);
-		return data;
+		const p = {};
+		p.promise = new Promise((res) => {
+			p.resolve = res;
+		});
+		p.resolve("WOWOWOWOW DATA: " + data);
+		return p.promise;
 	},
-	max: 4,
+	max: 8,
 });
-new Thread<string | Blob, string>(
-	(name) => {
-		return "Hello " + name;
-	},
-	{ once: true },
-).send();
-
 async function rn() {
-	let runs = 5;
+	let runs = 10;
+	const tasks = [];
 	for (let idx = 0; idx < runs; idx++) {
 		// console.log("running thread", idx);
-		const test = pool.exec(idx + 1);
-		test.then((r) => console.log("test", r));
+		tasks.push(pool.exec(idx));
 	}
+	console.log(tasks);
+	console.log(
+		await Promise.all(
+			tasks.map(async (f) => {
+				return await f;
+			}),
+		),
+	);
+
+	console.log("nice");
 }
 rn();

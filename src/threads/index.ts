@@ -1,3 +1,2 @@
-export { BroadcastChannel } from './channel';
-export { ThreadPool } from './pool';
-export { Thread } from './thread';
+export { ThreadPool } from "./pool";
+export { Thread } from "./thread";

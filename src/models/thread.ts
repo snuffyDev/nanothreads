@@ -5,23 +5,12 @@ export type GetReturnType<T> = T extends (...args: unknown[]) => Promise<ReturnT
 	: T;
 
 export type WorkerThreadFn<Args extends any | any[], Output = unknown> = (
-	...args: Args extends [...args: infer A] ? A : [Args]
+	...args: Args extends [...args: any[]] ? Args : [Args]
 ) => Output extends Promise<infer R> ? Promise<Awaited<R>> : Output;
 
 export type UnsubscribeFn = () => void;
 export interface IThreadOptions {
 	once?: boolean;
-}
-
-export interface IThreadBuilder<Args extends [...arg: unknown[]]> {
-	(count?: number | undefined): IThreadSpawner<Args>;
-}
-
-export interface IThreadSpawner<ArgType extends [...arg: unknown[]]> {
-	spawn: (
-		func: WorkerThreadFn<ArgType>,
-		options?: IThreadOptions,
-	) => IThread<ArgType, GetReturnType<WorkerThreadFn<ArgType>>>;
 }
 
 export interface IThread<Args extends [...args: unknown[]] | unknown, Output> {
@@ -31,7 +20,7 @@ export interface IThread<Args extends [...args: unknown[]] | unknown, Output> {
 	 * @param {?(T)} [data] optional
 	 * @returns {(Promise<Output>)}
 	 */
-	send(...data: Args extends [...args: infer T] ? [...args: T] : Args[]): Promise<Output>;
+	send(...data: Args extends any[] ? Args : [Args]): Promise<Output>;
 
 	/** Terminates the thread */
 	terminate(): Promise<StatusCode>;

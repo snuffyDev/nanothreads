@@ -1,33 +1,13 @@
 import { StatusCode } from "../models";
 import type { IThread as IThread, WorkerThreadFn } from "../models/thread";
 import { browser } from "../internals";
-import { Worker as WorkerImpl, type IWorkerImpl, type IWorkerOptions } from "../internals/NodeWorker";
-import type { WorkerOptions as WON } from "worker_threads";
-import { LinkedList } from "../sync/queue";
+import { Worker as WorkerImpl } from "../internals/NodeWorker";
+import { Queue } from "../sync/queue";
+import { MessageChannel } from "./channel";
 
-const TEMPLATE_NODE = `const { parentPort, workerData } = require('worker_threads');
-parentPort?.on('message', async ({data}) => {
+const TEMPLATE_NODE = ` const { parentPort, workerData } = require('worker_threads'); const HANDLER = async (...args) => ($1)(...args);\n parentPort?.on('message', (message) => { const port = message.port; port.onmessage = async ({data}) => { HANDLER(...data.data).then((m) => port.postMessage(m));};})`;
 
-		const res = await ($1)(data);
-		parentPort.postMessage({ data: res, status: 200 });
-
-	})
-	`;
-
-const TEMPLATE_BROWSER = `
-    onmessage = async ({ data }) => {
-			try {
-
-				const res = await ($1)(data.data);
-        postMessage({ data: res, status: 200});
-			} catch (err) {
-				postMessage({ data: null, error: err, status: 500});
-			}
-    };`;
-
-function receive<A = unknown | PromiseLike<unknown>>({ data, error = null }: { data: A; error?: unknown | null }): A {
-	return data;
-}
+const TEMPLATE_BROWSER = `const HANDLER = async (...args) => ($1)(...args);\nonmessage = (e) => {  try { const port = e.ports[0]; port.onmessage = async ({ data }) => { HANDLER(...data.data).then((m) => port.postMessage(m)) }} catch (err) { postMessage({ data: null, error: err, status: 500}); }};`;
 
 function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func): string {
 	let func_str = func.toString();
@@ -37,52 +17,74 @@ function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func):
 	return TEMPLATE_NODE.replace("$1", func_str);
 }
 
-export class Thread<Args extends [...args: unknown[]] | unknown, Output> implements IThread<Args, Output> {
+function createWorker(src: string, options: IWorkerOptions) {
+	return new WorkerImpl(src, options);
+}
+
+export class Thread<Args extends [...args: unknown[]] | any, Output> implements IThread<Args, Output> {
+	private resolvers: Queue<{ resolve: (value: Output) => void; reject: (value: unknown) => void }> = new Queue();
 	#handle: InstanceType<typeof WorkerImpl>;
-	private resolvers: LinkedList<{ resolve: (value: Output) => void; reject: (value: unknown) => void }> =
-		new LinkedList();
-
-	// stringified version of the callback fn
+	#channel: MessagePort;
 	#src: string;
-
-	constructor(readonly func: WorkerThreadFn<Args, Output>, private opts: { once?: boolean } = { once: true }) {
+	constructor(
+		readonly func: WorkerThreadFn<Args, Output>,
+		private opts: { once?: boolean } = {
+			once: true,
+		},
+	) {
 		if (typeof func !== "function") throw new TypeError("Parameter `func` must be a callable function.");
 
 		const func_str = funcToString(func);
+		const options: IWorkerOptions & { eval?: boolean } = !browser ? { eval: true } : {};
+		const { port1, port2 } = new MessageChannel();
 
 		this.#src = browser ? URL.createObjectURL(new Blob([func_str], { type: "text/javascript" })) : func_str;
 
-		const options = !browser ? { eval: true } : {};
+		// Worker Thread Setup
+		this.#channel = port2;
+		this.#handle = createWorker(this.#src, options);
 
-		this.#handle = new WorkerImpl<Args>(this.#src, options);
-		const that = this;
-		this.#handle.addEventListener("message", that.onmessage.bind(this), opts);
-		this.#handle.addEventListener("error", that.onerror.bind(this), opts);
+		// Message Handling
+
+		/** Transfer the MessagePort to the worker thread */
+		this.#handle.postMessage(browser ? undefined : { port: port1 }, [port1]);
+
+		/** message callback for the worker thread */
+		this.#channel.onmessage = this.onmessage.bind(this);
+
+		/** error message callback for the worker thread */
+		this.#channel.onmessageerror = ((err: unknown) => {
+			const { reject } = this.resolvers!.shift()!;
+
+			reject(err);
+			if (this.opts.once) this.terminate();
+		}).bind(this);
 	}
 
 	private onmessage(message: MessageEvent<{ data: Output }>) {
-		const { resolve } = this.resolvers.removeHead()!;
-		resolve(receive<Output>(message.data));
+		const r = this.resolvers!.shift()!;
+		queueMicrotask(() => {
+			r.resolve!(message?.data as Output);
 
-		if (this.opts.once) this.terminate();
-	}
-	private onerror(err: unknown) {
-		const { reject } = this.resolvers.removeHead()!;
-
-		reject(err);
-		if (this.opts.once) this.terminate();
-	}
-	send(...data: [...args: unknown[]] & unknown): Promise<Output> {
-		return new Promise<Output>((resolve: (value: Output) => void, reject) => {
-			this.resolvers.insertTail({ resolve, reject });
-			this.#handle.postMessage({ data });
+			if (this.opts.once) this.terminate();
 		});
 	}
 
+	send(...data: Args extends any[] ? Args : [Args]): Promise<Output> {
+		const p = new Promise<Output>((resolve, reject) => {
+			this.resolvers.push({ resolve: resolve, reject: reject });
+		});
+		queueMicrotask(() => {
+			this.#channel.postMessage({ data });
+		});
+		return p;
+	}
+
 	async terminate(): Promise<StatusCode> {
-		const that = this;
-		this.#handle.removeEventListener("message", that.onmessage.bind(this));
-		this.#handle.removeEventListener("error", that.onerror.bind(this));
+		this.#handle.terminate();
+		if (browser) {
+			URL.revokeObjectURL(this.#src);
+		}
 		return StatusCode.TERMINATED;
 	}
 }

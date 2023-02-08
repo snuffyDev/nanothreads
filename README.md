@@ -2,22 +2,24 @@
 
 A powerful Worker-based multi-threading library for the browser and Node.js
 
-> Nanothreads is only 2.19KB, making it a _super_ tiny alternative to [tinypool](https://github.com/tinylibs/tinypool),
-> and others!
+> Nanothreads is only ~2.1KB for the Web, ~2.3KB for Node, making it a _super_ tiny alternative to
+> [tinypool](https://github.com/tinylibs/tinypool), [threads.js](https://github.com/andywer/threads.js) and others!
 
 ## Features
 
-- Spawn your worker threads using actual functions
-- Entire library is 2.19KB - no bloat!
-- 100% Fully Typed
-- Unified API, using the library is exactly the same in both the browser and in Node.
+- Spawn your worker threads using actual functions :partying_face:
+- Tiny bundle size! :see_no_evil:
+- 100% Fully Typed :100:
+- Zero-dependencies :x:
+- Super fast, super efficient :fire:
+- Unified API, using the library is exactly the same in both the browser and in Node. :eyes:
 
 ## Install
 
 ```
 npm install nanothreads
 
-pnpm install nanothreads
+pnpm add nanothreads
 
 yarn add nanothreads
 ```
@@ -51,7 +53,7 @@ const pool = new ThreadPool<string, Quote>({
 
 /** Pass on some data to the thread pool! */
 for (let idx = 0; idx < 10; idx++) {
-	handle.send("https://api.kanye.rest").then((quote) => {
+	pool.send("https://api.kanye.rest").then((quote) => {
 		// log output: "{ quote: "Man... whatever happened to my antique fish tank?" };"
 		console.log(JSON.stringify(quote));
 	});
@@ -65,4 +67,6 @@ await thread.terminate();
 await pool.terminate();
 ```
 
-## Getting started
+## API Documentation
+
+You can find them in the `/docs` directory (yet to be published)

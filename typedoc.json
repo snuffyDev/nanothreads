@@ -1,0 +1,8 @@
+{
+	"entryPoints": ["src/index.ts"],
+	"excludeInternal": true,
+	"excludePrivate": true,
+	"cleanOutputDir": true,
+	"includeVersion": true,
+	"name": ""
+}

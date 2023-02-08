@@ -1,3 +1,3 @@
-import { BroadcastChannel as NBC } from "worker_threads";
+import { MessageChannel as MC } from "worker_threads";
 
-export const BroadcastChannel = NBC;
+export const MessageChannel = MC;

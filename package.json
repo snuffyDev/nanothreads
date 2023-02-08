@@ -5,17 +5,24 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.2.5",
+	"version": "0.2.6",
 	"source": "./src/index.ts",
-	"description": "a tiny cross-platform Worker & concurrency library",
+	"description": "Multi-threading & concurrency library, made for browsers and Node.",
 	"keywords": [
 		"threads",
 		"worker",
 		"concurrency",
 		"async",
+		"thread pool",
+		"worker-pool",
+		"workers",
+		"pool",
+		"threadpool",
+		"thread",
+		"multithreading",
+		"parallel",
 		"threading",
-		"browser",
-		"mutex"
+		"browser"
 	],
 	"files": [
 		"dist",
@@ -31,7 +38,7 @@
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
 		"build:dts": "tsc --moduleResolution node --target ESNext -m esnext --declaration true --emitDeclarationOnly --rootDir ./src/ --outDir dist && cp ./dist/index.d.ts ./dist/index.web.d.ts",
 		"run:esm:node-demo": "node --loader=ts-node/esm --experimental-specifier-resolution=node ./index.mts",
-		"run:cjs:node-demo": "node --es-module-specifier-resolution=node ./index.cjs.js",
+		"run:cjs:node-demo": "node ./index.cjs.js",
 		"start": "pnpm run build && pnpm run run:esm:node-demo",
 		"format": "prettier --write .",
 		"test": "size-limit"
@@ -59,20 +66,36 @@
 	},
 	"size-limit": [
 		{
+			"name": "Node (ESM)",
 			"limit": "2.5 KB",
 			"import": "*",
-			"path": "src/index.ts"
+			"path": "dist/index.mjs"
+		},
+		{
+			"name": "Node (CJS)",
+			"limit": "2.5 KB",
+			"import": "*",
+			"path": "dist/index.cjs"
+		},
+		{
+			"name": "Web (ESM)",
+			"limit": "2.5 KB",
+			"import": "*",
+			"path": "dist/index.web.mjs"
 		}
 	],
 	"devDependencies": {
+		"@size-limit/file": "^8.1.2",
 		"@size-limit/preset-small-lib": "^8.1.0",
 		"@types/node": "^18.8.3",
 		"esbuild": "^0.16.13",
 		"esbuild-wasm": "^0.16.16",
 		"prettier": "^2.8.0",
 		"size-limit": "^8.1.0",
+		"size-limit-node-esbuild": "^0.2.0",
 		"ts-node": "^10.9.1",
 		"tsup": "^6.5.0",
+		"typedoc": "^0.23.24",
 		"typescript": "^4.9.3"
 	}
 }

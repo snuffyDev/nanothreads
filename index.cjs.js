@@ -1,16 +1,15 @@
-const { Semaphore, Mutex, Thread } = require("./dist/index");;
-const { ThreadPool } = require("./dist/index");
+const { Semaphore, Mutex, Thread } = require("./dist/index.cjs");
+const { ThreadPool } = require("./dist/index.cjs");
 const FASTA = (num) => {
 	var last = 42,
 		A = 3877,
 		C = 29573,
 		M = 139968;
-
+	if (num % 2) throw new Error("Error!!!!");
 	function rand(max) {
 		last = (last * A + C) % M;
 		return (max * last) / M;
 	}
-
 	var ALU =
 		"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG" +
 		"GAGGCCGAGGCGGGCGGATCACCTGAGGTCAGGAGTTCGAGA" +
@@ -19,7 +18,6 @@ const FASTA = (num) => {
 		"GCTACTCGGGAGGCTGAGGCAGGAGAATCGCTTGAACCCGGG" +
 		"AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC" +
 		"AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA";
-
 	var IUB = {
 		a: 0.27,
 		c: 0.12,
@@ -37,14 +35,12 @@ const FASTA = (num) => {
 		W: 0.02,
 		Y: 0.02,
 	};
-
 	var HomoSap = {
 		a: 0.302954942668,
 		c: 0.1979883004921,
 		g: 0.1975473066391,
 		t: 0.3015094502008,
 	};
-
 	function makeCumulative(table) {
 		var last = null;
 		for (var c in table) {
@@ -52,7 +48,6 @@ const FASTA = (num) => {
 			last = c;
 		}
 	}
-
 	function fastaRepeat(n, seq) {
 		var seqi = 0,
 			lenOut = 60;
@@ -71,7 +66,6 @@ const FASTA = (num) => {
 		}
 		return out;
 	}
-
 	function fastaRandom(n, table) {
 		var line = new Array(60);
 		makeCumulative(table);
@@ -94,20 +88,34 @@ const FASTA = (num) => {
 	}
 	return Promise.resolve([fastaRepeat(num * 2, ALU), fastaRandom(3 * num, IUB), fastaRandom(3 * num, HomoSap)]);
 };
-
 const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
-
 const pool = new ThreadPool({
-	task: FASTA,
-	max: 2,
+	task: (data) => {
+		return data;
+	},
+	max: 8,
 });
-
+new Thread(
+	(name) => {
+		return "Hello " + name;
+	},
+	{ once: true },
+).send();
 async function rn() {
-	let runs = 5;
+	let runs = 10;
+	const tasks = [];
 	for (let idx = 0; idx < runs; idx++) {
-		pool.exec(idx + 1).then((res) => {
-			console.log(JSON.stringify(res));
-		});
+		console.log("running thread", idx);
+		const test = pool.exec(idx);
+		tasks.push(test);
 	}
+	console.log("running thread");
+	Promise.all(
+		tasks.map(async (v, i) => {
+			console.log(v, i);
+			return await v;
+		}),
+	).then((result) => console.log(result));
+	console.log("running thread EEE");
 }
 rn();

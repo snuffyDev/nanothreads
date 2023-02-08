@@ -1,19 +1,18 @@
 import { Worker as _Worker } from "worker_threads";
+/** @internal */
 export class Worker extends _Worker {
-	#messageRef = [];
-	#errorRef = [];
 	/**
 	 * @param {string | import("url").URL} src
 	 */
 	constructor(src, opts = {}) {
 		super(src, opts);
+		this.on("message", (m) => this.onmessage(m));
 	}
-
+	onmessage = (e) => {};
 	terminate() {
-		for (const c of this.#messageRef) this.off('message', c)
-		for (const c of this.#errorRef) this.off('error', c)
-
-		return this.terminate();
+		const that = this;
+		super.off("message", that.onmessage);
+		return super.terminate();
 	}
 
 	/**
@@ -30,15 +29,13 @@ export class Worker extends _Worker {
 	 * @param {(err: Error) => void} cb
 	 * @param {{ once: any; }} opts
 	 */
-	addEventListener(event, cb, opts) {
-		if (event === 'error') this.#errorRef.push(cb);
-		else if (event === 'message') this.#messageRef.push(cb);
+	addEventListener = (event, cb, opts) => {
 		if (!opts?.once) {
 			this.once(event, cb);
 		} else {
 			this.on(event, cb);
 		}
-	}
+	};
 
 	/**
 	 * @param {string} event
