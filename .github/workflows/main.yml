@@ -28,7 +28,7 @@ jobs:
         with:
           name: Threadpool Benchmark
           tool: 'benchmarkjs'
-          output-file-path: /output.txt
+          output-file-path: benchmarks/output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           # Show alert with commit comment on detecting possible performance regression
