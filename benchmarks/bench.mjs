@@ -3,9 +3,10 @@ import { Worker } from "worker_threads";
 const FILES = ["./nt.mjs", "./threadsjs.mjs", "./tinypool.mjs"];
 
 FILES.map((path) => {
-	return new Worker(path, {})
-		.on("message", (m) => {
-			console.log(path, m);
+	const w =  new Worker(path, {});
+	w.on("message", (m) => {
+			console.log( m);
+			w.terminate()
 		})
 		.postMessage(null);
 });
