@@ -13,10 +13,16 @@ jobs:
     name: Run JavaScript benchmark example
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 6.32.9
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
       - name: Run benchmark
-        run: cd ./benchmarks && npm install && node bench.mjs | tee output.txt
+        run: cd ./benchmarks && pnpm ci && pnpm run run:threadpool | tee output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
