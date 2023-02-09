@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1675914168380,
+  "lastUpdate": 1675914396957,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -133,6 +133,51 @@ window.BENCHMARK_DATA = {
             "range": "±66.87%",
             "unit": "ops/sec",
             "extra": "10 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "45a1cecf1bf243fe28e18d5593775b84a5d9fb84",
+          "message": "dont immediately invoke increment",
+          "timestamp": "2023-02-08T22:45:12-05:00",
+          "tree_id": "ca3c4e1a27c6ffa4c30f94386b521b86eebe4c8c",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/45a1cecf1bf243fe28e18d5593775b84a5d9fb84"
+        },
+        "date": 1675914394840,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "threads.js (threadpool)",
+            "value": 656,
+            "range": "±75.63%",
+            "unit": "ops/sec",
+            "extra": "10 samples"
+          },
+          {
+            "name": "tinypool",
+            "value": 46715,
+            "range": "±25.07%",
+            "unit": "ops/sec",
+            "extra": "30 samples"
+          },
+          {
+            "name": "nanothreads (threadpool)",
+            "value": 115270,
+            "range": "±80.73%",
+            "unit": "ops/sec",
+            "extra": "15 samples"
           }
         ]
       }
