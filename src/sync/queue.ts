@@ -7,6 +7,10 @@ type DequeNode<T> = {
 export class Queue<T = any> {
 	front?: DequeNode<T> | null;
 	back?: DequeNode<T> | null;
+	private _length = 0;
+	public get length() {
+		return this._length;
+	}
 
 	constructor(...initialValues: T[]) {
 		initialValues.forEach((initialValue) => {
@@ -21,6 +25,7 @@ export class Queue<T = any> {
 		}
 
 		this.front = this.front.next = { value, prev: this.front };
+		this._length += 1;
 	}
 
 	shift() {
@@ -37,6 +42,8 @@ export class Queue<T = any> {
 		}
 
 		(this.front = this.front!.prev!).next = null;
+		this._length -= 1;
+
 		return value;
 	}
 
@@ -51,6 +58,7 @@ export class Queue<T = any> {
 		}
 
 		this.back = this.back!.prev = { value, next: this.back };
+		this._length += 1;
 	}
 
 	pop() {
@@ -67,6 +75,8 @@ export class Queue<T = any> {
 		}
 
 		(this.back = this.back.next!).prev = null;
+		this._length -= 1;
+
 		return value;
 	}
 

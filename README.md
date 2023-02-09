@@ -69,4 +69,5 @@ await pool.terminate();
 
 ## API Documentation
 
-You can find them in the `/docs` directory (yet to be published)
+You can find the docs here: [Link](https://snuffydev.github.io/nanothreads/docs/index.html), or in the `/docs` directory
+on GitHub.

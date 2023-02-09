@@ -7,12 +7,15 @@ class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_thre
 		super(src, opts);
 	}
 
-	postMessage(
+	postMessage<P>(
 		...args:
-			| [message?: { port: MessagePort } | { data: T }, transfer?: Transferable[]]
-			| [message?: { port: MessagePort } | { data: T }, options?: StructuredSerializeOptions | undefined]
+			| [message?: P extends undefined ? { port: MessagePort } | { data: T } : P, transfer?: Transferable[]]
 			| [
-					value?: { port: MessagePort } | { data: T },
+					message?: P extends undefined ? { port: MessagePort } | { data: T } : P,
+					options?: StructuredSerializeOptions | undefined,
+			  ]
+			| [
+					value?: P extends unknown ? { port: MessagePort } | { data: T } : P,
 					transferList?: readonly import("worker_threads").TransferListItem[] | undefined,
 			  ]
 	): void {

@@ -4,11 +4,11 @@ import type { WorkerThreadFn } from "../models";
 type MaybePromise<P> = P | Promise<P>;
 
 const TASK_SYM: unique symbol = Symbol("#TASK");
-
+const yieldMicro = () => new Promise<void>((resolve) => queueMicrotask(resolve));
 type ThreadArgs<T> = T | [...args: T[]];
 export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 	#threads: Thread<Arguments, MaybePromise<Output>>[] = [];
-	#curThreadNum = -1;
+	#curThreadNum = 0;
 	#max = 0;
 
 	private [TASK_SYM]: WorkerThreadFn<Arguments, MaybePromise<Output>>;
@@ -24,8 +24,7 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 	}
 
 	private nextInt(value = 1) {
-		this.#curThreadNum = (this.#curThreadNum - value) & (this.#max - 1);
-		return this.#curThreadNum;
+		return (this.#curThreadNum = (this.#curThreadNum - value) & (this.#max - 1));
 	}
 
 	/** Kill a specific thread (cannot be undone!) */
@@ -46,7 +45,6 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 	/** Executes the `task` passed in to the ThreadPool's contstructor */
 	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
 		if (this.#threads.length === 0) throw new Error("Cannot execute a terminated thread pool.");
-
-		return Promise.resolve(this.#threads[this.nextInt()]).then((t) => t.send(...args) as Promise<Output>);
+		return Promise.resolve(this.#threads[this.nextInt()]).then((t) => t.send(...args)) as Promise<Output>;
 	}
 }

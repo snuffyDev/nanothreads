@@ -4,10 +4,11 @@ import { browser } from "../internals";
 import { Worker as WorkerImpl } from "../internals/NodeWorker";
 import { Queue } from "../sync/queue";
 import { MessageChannel } from "./channel";
+import { Defer } from "./../utils";
 
-const TEMPLATE_NODE = ` const { parentPort, workerData } = require('worker_threads'); const HANDLER = async (...args) => ($1)(...args);\n parentPort?.on('message', (message) => { const port = message.port; port.onmessage = async ({data}) => { HANDLER(...data.data).then((m) => port.postMessage(m));};})`;
+const TEMPLATE_NODE = ` const { parentPort, workerData } = require('worker_threads'); const HANDLER = async (...args) => ($1)(...args);\n const makeMessageHandler = (port) => (async ({ data }) => { await HANDLER(...data.data).then((m) => port.postMessage(m)) });\n parentPort?.on('message', (message) => { const port = message.port; port.onmessage = makeMessageHandler(port)});`;
 
-const TEMPLATE_BROWSER = `const HANDLER = async (...args) => ($1)(...args);\nonmessage = (e) => {  try { const port = e.ports[0]; port.onmessage = async ({ data }) => { HANDLER(...data.data).then((m) => port.postMessage(m)) }} catch (err) { postMessage({ data: null, error: err, status: 500}); }};`;
+const TEMPLATE_BROWSER = `const HANDLER = async (...args) => ($1)(...args); const makeMessageHandler = (port) => (async ({ data }) => { await HANDLER(...data.data).then((m) => port.postMessage(m)) }); onmessage = (e) => { try { const port = e.ports[0]; port.onmessage = makeMessageHandler(port);} catch (err) { postMessage({ data: null, error: err, status: 500 }); } };`;
 
 function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func): string {
 	let func_str = func.toString();
@@ -26,6 +27,7 @@ export class Thread<Args extends [...args: unknown[]] | any, Output> implements 
 	#handle: InstanceType<typeof WorkerImpl>;
 	#channel: MessagePort;
 	#src: string;
+
 	constructor(
 		readonly func: WorkerThreadFn<Args, Output>,
 		private opts: { once?: boolean } = {
@@ -45,9 +47,8 @@ export class Thread<Args extends [...args: unknown[]] | any, Output> implements 
 		this.#handle = createWorker(this.#src, options);
 
 		// Message Handling
-
 		/** Transfer the MessagePort to the worker thread */
-		this.#handle.postMessage(browser ? undefined : { port: port1 }, [port1]);
+		this.#handle.postMessage<{ port?: MessagePort }>(browser ? undefined : { port: port1 }, [port1]);
 
 		/** message callback for the worker thread */
 		this.#channel.onmessage = this.onmessage.bind(this);
@@ -55,7 +56,6 @@ export class Thread<Args extends [...args: unknown[]] | any, Output> implements 
 		/** error message callback for the worker thread */
 		this.#channel.onmessageerror = ((err: unknown) => {
 			const { reject } = this.resolvers!.shift()!;
-
 			reject(err);
 			if (this.opts.once) this.terminate();
 		}).bind(this);
@@ -63,21 +63,16 @@ export class Thread<Args extends [...args: unknown[]] | any, Output> implements 
 
 	private onmessage(message: MessageEvent<{ data: Output }>) {
 		const r = this.resolvers!.shift()!;
-		queueMicrotask(() => {
-			r.resolve!(message?.data as Output);
+		r.resolve!(message?.data as Output);
 
-			if (this.opts.once) this.terminate();
-		});
+		if (this.opts.once) this.terminate();
 	}
 
 	send(...data: Args extends any[] ? Args : [Args]): Promise<Output> {
-		const p = new Promise<Output>((resolve, reject) => {
-			this.resolvers.push({ resolve: resolve, reject: reject });
-		});
-		queueMicrotask(() => {
-			this.#channel.postMessage({ data });
-		});
-		return p;
+		const p = Defer<Output>();
+		this.resolvers.push(p);
+		this.#channel.postMessage({ data });
+		return p.promise;
 	}
 
 	async terminate(): Promise<StatusCode> {
