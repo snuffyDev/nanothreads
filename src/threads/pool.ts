@@ -45,6 +45,6 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 	/** Executes the `task` passed in to the ThreadPool's contstructor */
 	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
 		if (this.#threads.length === 0) throw new Error("Cannot execute a terminated thread pool.");
-		return Promise.resolve(this.#threads[this.nextInt()]).then((t) => t.send(...args)) as Promise<Output>;
+		return Promise.resolve(() => this.#threads[this.nextInt()]).then((t) => t().send(...args)) as Promise<Output>;
 	}
 }
