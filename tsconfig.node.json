@@ -8,7 +8,7 @@
 		"strict": true,
 		"sourceMap": true,
 		"resolveJsonModule": true,
-		"baseUrl": "src",
+		"baseUrl": ".",
 		"allowJs": true,
 		"rootDir": ".",
 		"declaration": true,

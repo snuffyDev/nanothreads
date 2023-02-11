@@ -4,17 +4,25 @@ import fasta from "./fasta.mjs";
 import { parentPort } from "worker_threads";
 
 const nt = new ThreadPool({ task: fasta, max: 4 });
+
+const NUM = 2500000;
 parentPort?.on("message", () => {
 	new b.Suite()
 		.add(
 			"nanothreads (threadpool)",
 			async () => {
-				return await nt.exec();
+				return await nt.exec(NUM);
+				// return await doThings(NUM);
 			},
 			{ async: true },
 		)
 		.on("cycle", function (event) {
 			parentPort?.postMessage(String(event.target));
 		})
-		.run({ teardown: () => nt.terminate() });
+		.run({
+			async: true,
+			teardown: async () => {
+				return await nt.terminate();
+			},
+		});
 });

@@ -1,13 +1,19 @@
 import { Worker } from "worker_threads";
 
-const FILES = ["./nt.mjs", "./threadsjs.mjs", "./tinypool.mjs"];
+const FILES = ["./threadsjs.mjs", "./tinypool.mjs", "./nt.mjs"];
 
-FILES.map((path) => {
-	const w = new Worker(path, {});
-	w.on("message", (m) => {
-		console.log(m);
-		w.terminate();
-	}).postMessage(null);
-});
+const createWorker = (path) =>
+	new Promise((resolve, reject) => {
+		const w = new Worker(path, {});
+		w.on("message", (m) => {
+			w.terminate().then(() => setTimeout(() => resolve(m), 5000));
+		});
+		w.postMessage(null);
+	});
+(async () => {
+	for (const path of FILES) {
+		console.log(await createWorker(path));
+	}
+})();
 
 // for (let idx = 0; idx < 8; idx++) {}

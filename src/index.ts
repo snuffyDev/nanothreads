@@ -17,5 +17,5 @@ export type {
 	IThread,
 } from "./models";
 export { StatusCode } from "./models";
-export { Queue, Semaphore } from "./sync";
+export { Queue } from "./sync";
 export { ThreadPool, Thread } from "./threads";
