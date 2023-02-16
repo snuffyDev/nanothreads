@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1676141434116,
+  "lastUpdate": 1676530330143,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -223,6 +223,58 @@ window.BENCHMARK_DATA = {
             "range": "±29.56%",
             "unit": "ops/sec",
             "extra": "38 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "7b4fdfa9f3c7587c8f2e4a9565077260561a2621",
+          "message": "feat: script-based threads + inline threads\nperf: thread pool optimization",
+          "timestamp": "2023-02-16T01:50:33-05:00",
+          "tree_id": "17c102c89150e8f2cc30966c58b32f39e22a5b93",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/7b4fdfa9f3c7587c8f2e4a9565077260561a2621"
+        },
+        "date": 1676530329334,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "threads.js (threadpool)",
+            "value": 1504,
+            "range": "±35.43%",
+            "unit": "ops/sec",
+            "extra": "12 samples"
+          },
+          {
+            "name": "tinypool",
+            "value": 176085,
+            "range": "±13.44%",
+            "unit": "ops/sec",
+            "extra": "47 samples"
+          },
+          {
+            "name": "nanothreads ([inline] threadpool)",
+            "value": 261331,
+            "range": "±37.53%",
+            "unit": "ops/sec",
+            "extra": "38 samples"
+          },
+          {
+            "name": "nanothreads ([file] threadpool)",
+            "value": 210931,
+            "range": "±41.31%",
+            "unit": "ops/sec",
+            "extra": "51 samples"
           }
         ]
       }
