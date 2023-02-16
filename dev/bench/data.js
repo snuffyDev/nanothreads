@@ -33,13 +33,6 @@ window.BENCHMARK_DATA = {
             "extra": "31 samples"
           },
           {
-            "name": "nanothreads (threadpool)",
-            "value": 135674,
-            "range": "±45.18%",
-            "unit": "ops/sec",
-            "extra": "26 samples"
-          },
-          {
             "name": "threads.js (threadpool)",
             "value": 565,
             "range": "±53.68%",
@@ -82,13 +75,6 @@ window.BENCHMARK_DATA = {
             "unit": "ops/sec",
             "extra": "33 samples"
           },
-          {
-            "name": "nanothreads (threadpool)",
-            "value": 117662,
-            "range": "±62.40%",
-            "unit": "ops/sec",
-            "extra": "9 samples"
-          }
         ]
       },
       {
@@ -127,13 +113,6 @@ window.BENCHMARK_DATA = {
             "unit": "ops/sec",
             "extra": "35 samples"
           },
-          {
-            "name": "nanothreads (threadpool)",
-            "value": 112066,
-            "range": "±66.87%",
-            "unit": "ops/sec",
-            "extra": "10 samples"
-          }
         ]
       },
       {
@@ -172,13 +151,6 @@ window.BENCHMARK_DATA = {
             "unit": "ops/sec",
             "extra": "30 samples"
           },
-          {
-            "name": "nanothreads (threadpool)",
-            "value": 115270,
-            "range": "±80.73%",
-            "unit": "ops/sec",
-            "extra": "15 samples"
-          }
         ]
       },
       {
@@ -217,13 +189,6 @@ window.BENCHMARK_DATA = {
             "unit": "ops/sec",
             "extra": "60 samples"
           },
-          {
-            "name": "nanothreads (threadpool)",
-            "value": 229096,
-            "range": "±29.56%",
-            "unit": "ops/sec",
-            "extra": "38 samples"
-          }
         ]
       },
       {

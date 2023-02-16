@@ -7,17 +7,18 @@
       html {
         font-family: BlinkMacSystemFont,-apple-system,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Fira Sans","Droid Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
         -webkit-font-smoothing: antialiased;
-        background-color: #fff;
+        background-color: #1a1b1f;
         font-size: 16px;
+				line-height: 1.4;
       }
       body {
-        color: #4a4a4a;
+				color: #ebebeb;
         margin: 8px;
         font-size: 1em;
         font-weight: 400;
       }
       header {
-        margin-bottom: 8px;
+				margin-bottom: 8px;
         display: flex;
         flex-direction: column;
       }
@@ -32,17 +33,21 @@
         text-decoration: none;
       }
       a:hover {
-        color: #000;
+				color: #000;
       }
       button {
-        color: #fff;
-        background-color: #3298dc;
+				line-height: 1.2;
+				color: #fff;
+        background-color: #216ac9;
         border-color: transparent;
         cursor: pointer;
         text-align: center;
+				border-radius: 4px;
+				text-shadow: -1px 1px 3px #00000075;
+				padding: 1em 1.25em;
       }
       button:hover {
-        background-color: #2793da;
+        background-color: #1480c9;
         flex: none;
       }
       .spacer {
@@ -80,7 +85,7 @@
         width: 100%;
       }
       .benchmark-chart {
-        max-width: 1000px;
+        max-width: 39em;
       }
     </style>
     <title>Benchmarks</title>
@@ -113,7 +118,7 @@
         const toolColors = {
           cargo: '#dea584',
           go: '#00add8',
-          benchmarkjs: '#f1e05a',
+          benchmarkjs: '#f34b7d',
           benchmarkluau: '#000080',
           pytest: '#3572a5',
           googlecpp: '#f34b7d',
