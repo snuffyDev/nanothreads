@@ -45,11 +45,11 @@ const ThreadType = {
  *
  */
 export function workerInit<Args extends [...args: unknown[]] | any, Output>(
-	target: typeof globalThis | import("node:worker_threads").MessagePort,
+	target: DedicatedWorkerGlobalScope["self"] | import("node:worker_threads").MessagePort,
 	func: WorkerThreadFn<Args, Output>,
 ) {
 	if (browser) {
-		onmessage = (e) => {
+		(target as DedicatedWorkerGlobalScope["self"]).onmessage = (e) => {
 			const port = e.ports[0];
 			port.onmessage = (data) => Promise.resolve(func(...data.data)).then((p) => port.postMessage(p));
 		};
@@ -74,7 +74,7 @@ export abstract class AbstractThread<Args extends [...args: unknown[]] | any, Ou
 
 	constructor(
 		protected src: WorkerThreadFn<Args, Output> | string,
-		protected config?: { once?: boolean; id?: number },
+		protected config?: { once?: boolean; type?: "module" | undefined; id?: number },
 	) {}
 }
 
@@ -87,9 +87,10 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 	protected options: IWorkerOptions & { eval?: boolean | undefined } = {};
 	constructor(
 		src: WorkerThreadFn<Args, Output> | string,
-		config: { once?: boolean; id?: number } = {
+		protected config: { type?: "module" | undefined; once?: boolean; id?: number } = {
 			once: true,
 			id: 0,
+			type: undefined,
 		},
 	) {
 		super(src, config);
@@ -116,7 +117,9 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 				throw new Error("Invalid parameter `src`. Expected type `function` or `string`");
 			}
 		}
-
+		if (this.config.type !== undefined) {
+			this.options.type = this.config.type;
+		}
 		const { port1, port2 } = new MessageChannel();
 
 		this.channel = port2;
@@ -168,7 +171,7 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
  * ```
  */
 export class Thread<Args, Output> extends ThreadImpl<Args, Output> {
-	constructor(src: string | URL, options: { once: boolean; id?: number }) {
+	constructor(src: string | URL, options: { type?: "module" | undefined; once?: boolean; id?: number }) {
 		super(src.toString(), options);
 	}
 }
@@ -184,7 +187,10 @@ export class Thread<Args, Output> extends ThreadImpl<Args, Output> {
  * ```
  */
 export class InlineThread<Args, Output> extends ThreadImpl<Args, Output> {
-	constructor(src: WorkerThreadFn<Args, Output>, options: { once: boolean; id?: number }) {
+	constructor(
+		src: WorkerThreadFn<Args, Output>,
+		options: { once?: boolean; type?: "module" | undefined; id?: number },
+	) {
 		super(src, options);
 	}
 }

@@ -19,9 +19,11 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 	constructor({
 		task,
 		max = 4,
+		type = undefined,
 	}: {
 		task: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL;
 		max: number;
+		type?: "module" | undefined;
 	}) {
 		// Sets the thread count
 		this.#max = Math.max(max, 1);
@@ -34,7 +36,7 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
 				idx,
 				new TCtor<Arguments, MaybePromise<Output>>(
 					this[TASK_SYM] as WorkerThreadFn<Arguments, MaybePromise<Output>> & string & URL,
-					{ once: false, id: idx },
+					{ once: false, id: idx, type },
 				),
 			);
 		}

@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"source": "./src/index.ts",
 	"description": "A tiny threading library, made for browsers and Node.",
 	"keywords": [
