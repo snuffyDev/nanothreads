@@ -5,11 +5,11 @@ import { parentPort } from "worker_threads";
 
 const nt = new ThreadPool({ task: fasta, max: 4 });
 
-const NUM = 2500000;
+const NUM = 250000;
 parentPort?.on("message", () => {
 	new b.Suite()
 		.add(
-			"nanothreads (threadpool)",
+			"nanothreads ([inline] threadpool)",
 			async () => {
 				return await nt.exec(NUM);
 				// return await doThings(NUM);

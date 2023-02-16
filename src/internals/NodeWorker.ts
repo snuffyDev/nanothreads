@@ -7,20 +7,13 @@ class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_thre
 		super(src, opts);
 	}
 
-	postMessage<P>(
-		...args:
-			| [message?: P extends undefined ? { port: MessagePort } | { data: T } : P, transfer?: Transferable[]]
-			| [
-					message?: P extends undefined ? { port: MessagePort } | { data: T } : P,
-					options?: StructuredSerializeOptions | undefined,
-			  ]
-			| [
-					value?: P extends unknown ? { port: MessagePort } | { data: T } : P,
-					transferList?: readonly import("worker_threads").TransferListItem[] | undefined,
-			  ]
-	): void {
-		//@ts-expect-error
-		super.postMessage(...args);
+	postMessage<T>(
+		value: T,
+		transferList?: readonly (import("worker_threads").TransferListItem | Transferable)[] | undefined,
+	): void;
+	postMessage<T>(value: T, transferList?: StructuredSerializeOptions): void;
+	postMessage<T>(value: T, transferList?: undefined): void {
+		super.postMessage(value, transferList);
 	}
 
 	addEventListener<

@@ -4,5 +4,6 @@
 	"excludePrivate": true,
 	"cleanOutputDir": true,
 	"includeVersion": true,
+	"readme": "none",
 	"name": ""
 }

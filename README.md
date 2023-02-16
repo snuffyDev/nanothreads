@@ -1,20 +1,23 @@
 # nanothreads
 
-A powerful Worker-based multi-threading library for the browser and Node.js
+A super-fast, super-powerful Worker-based multi-threading library for the browser and Node.js.
 
-> Nanothreads is only ~2.1KB for the Web, ~2.3KB for Node, making it a _super_ tiny alternative to
-> [tinypool](https://github.com/tinylibs/tinypool), [threads.js](https://github.com/andywer/threads.js) and others!
+Nanothreads is only ~2 KB for browsers, ~2.3 KB for Node.js, making it a _super_ tiny alternative to
+[tinypool](https://github.com/tinylibs/tinypool), [threads.js](https://github.com/andywer/threads.js) and others!
 
-## Features
+**[\[Benchmarks\]](https://snuffydev.github.io/nanothreads/dev/bench/index.html)** |
+**[\[Docs\]](https://snuffydev.github.io/nanothreads/docs/index.html)**
 
-- Spawn your worker threads using actual functions :partying_face:
+## Overview
+
+- Zero-dependencies :x:
 - Tiny bundle size! :see_no_evil:
 - 100% Fully Typed :100:
-- Zero-dependencies :x:
 - Super fast, super efficient :fire:
-- Unified API, using the library is exactly the same in both the browser and in Node. :eyes:
+  - Each test is executed within separate Worker's
+- Works both in the browser, and Node :eyes:
 
-## Install
+### Install
 
 ```
 npm install nanothreads
@@ -24,23 +27,39 @@ pnpm add nanothreads
 yarn add nanothreads
 ```
 
-And then use!
+### Basic Usage
+
+#### Importing
 
 ```ts
-import { Thread, ThreadPool } from "nanothreads";
+// Browsers
+import { ThreadPool } from "nanothreads/index.web";
+
+// Node.js
+import { ThreadPool } from "nanothreads";
+```
+
+> Note: Browsers must specify the import path as `nanothreads/index.web`.
+
+#### Kitchen Sink
+
+```ts
+import { InlineThread, Thread, ThreadPool } from "nanothreads";
 
 type Quote = {
 	quote: string;
 };
 
-// Create a single thread
-const thread = new Thread<[name: string], string>((name) => {
+// Inline Thread
+const inline_thread = new InlineThread<[name: string], string>((name) => {
 	return "Hello " + name;
 });
 
-// ...or create a thread pool!
+// Thread from a script
+const thread = new Thread<number, number>("./worker.ts");
+
+// Thread Pool from an inlined function
 const pool = new ThreadPool<string, Quote>({
-	// `task` will return the correct types for parameters!
 	task: (url) => {
 		return fetch(url)
 			.then((res) => res.json())
@@ -49,25 +68,26 @@ const pool = new ThreadPool<string, Quote>({
 	max: 5, // Max number of threads = 5
 });
 
-// Use the threads
-
-/** Pass on some data to the thread pool! */
+// Using the thread pool
 for (let idx = 0; idx < 10; idx++) {
-	pool.send("https://api.kanye.rest").then((quote) => {
-		// log output: "{ quote: "Man... whatever happened to my antique fish tank?" };"
+	pool.exec("https://api.kanye.rest").then((quote) => {
+		// output: "{ quote: "Man... whatever happened to my antique fish tank?" };"
 		console.log(JSON.stringify(quote));
 	});
 }
 
-// Returns: "Hello Kanye"
-const greetings = await thread.send("Kanye");
+const greetings = await inline_thread.send("Kanye"); // output: "Hello Kanye"
+
+const my_number = await thread.send(4); // output: 8
 
 // Cleanup when done!
 await thread.terminate();
+await inline_thread.terminate();
 await pool.terminate();
 ```
 
-## API Documentation
+### Documentation
 
-You can find the docs here: [Link](https://snuffydev.github.io/nanothreads/docs/index.html), or in the `/docs` directory
-on GitHub.
+API Documentation can be found here:
+[snuffydev.github.io/nanothreads/docs](https://snuffydev.github.io/nanothreads/docs/index.html), or in the `/docs`
+directory on GitHub.

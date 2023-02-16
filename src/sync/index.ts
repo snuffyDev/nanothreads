@@ -1,1 +1,1 @@
-export { Queue } from "./queue";
+export { CircularDoublyLinkedList } from "./queue";

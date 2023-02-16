@@ -1,3 +1,5 @@
+import { browser } from "./internals";
+
 export interface Deferred<T> {
 	resolve(obj: T): void;
 
@@ -13,4 +15,11 @@ export function Defer<T>() {
 		deferred.reject = reject;
 	});
 	return deferred as Deferred<T>;
+}
+
+/** @internal bind `this` for a function to `ctx`  */
+export function bind(fn: any, ctx: any) {
+	return function bound(...args: any[]) {
+		return fn.apply(ctx, args);
+	};
 }

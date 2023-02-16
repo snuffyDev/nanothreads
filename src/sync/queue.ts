@@ -1,90 +1,89 @@
-type DequeNode<T> = {
+class Node<T> {
 	value: T;
-	prev?: DequeNode<T> | null;
-	next?: DequeNode<T> | null;
-};
+	next: Node<T> | null;
+	prev: Node<T> | null;
 
-export class Queue<T = any> {
-	front?: DequeNode<T> | null;
-	back?: DequeNode<T> | null;
-	private _length = 0;
-	public get length() {
-		return this._length;
+	constructor(value: T) {
+		this.value = value;
+		this.next = null;
+		this.prev = null;
 	}
+}
 
-	constructor(...initialValues: T[]) {
-		initialValues.forEach((initialValue) => {
-			this.push(initialValue);
-		});
-	}
+export class CircularDoublyLinkedList<T> {
+	private head: Node<T> | null;
+	private tail: Node<T> | null;
+	private length: number;
 
-	unshift(value: T) {
-		if (!this.front) {
-			this.front = this.back = { value };
-			return;
-		}
-
-		this.front = this.front.next = { value, prev: this.front };
-		this._length += 1;
-	}
-
-	shift() {
-		if (typeof this.front === "undefined" || this.front === null) {
-			return;
-		}
-
-		const value = this.peekFront();
-
-		if (this.front === this.back) {
-			this.front = null;
-			this.back = null;
-			return value;
-		}
-
-		(this.front = this.front!.prev!).next = null;
-		this._length -= 1;
-
-		return value;
-	}
-
-	private peekFront() {
-		return this.front?.value;
+	constructor() {
+		this.head = null;
+		this.tail = null;
+		this.length = 0;
 	}
 
 	push(value: T) {
-		if (typeof this.front === "undefined" || this.front === null) {
-			this.front = this.back = { value };
-			return;
+		const newNode = new Node(value)!;
+		if (!this.head) {
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.next = newNode;
+			newNode.prev = newNode;
+		} else {
+			newNode.prev = this.tail!;
+			newNode.next = this.head;
+			this.tail!.next = newNode!;
+			this.head.prev = newNode;
+			this.tail = newNode;
 		}
+		this.length++;
+	}
 
-		this.back = this.back!.prev = { value, next: this.back };
-		this._length += 1;
+	unshift(value: T) {
+		const newNode = new Node(value);
+		if (!this.head) {
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.next = newNode;
+			newNode.prev = newNode;
+		} else {
+			newNode.next = this.head;
+			newNode.prev = this.tail!;
+			this.head.prev = newNode;
+			this.tail!.next = newNode;
+			this.head = newNode;
+		}
+		this.length++;
 	}
 
 	pop() {
-		if (typeof this.back === "undefined" || this.back === null) {
+		const tail = this.tail;
+		if (!this.head) {
 			return;
+		} else if (tail === this.tail) {
+			this.head = null;
+			this.tail = null;
+		} else {
+			this.tail = this.tail!.prev;
+			this.tail!.next = this.head;
+			this.head!.prev = this.tail;
 		}
-
-		const value = this.peekBack();
-
-		if (this.front === this.back) {
-			this.front = null;
-			this.back = null;
-			return value;
-		}
-
-		(this.back = this.back.next!).prev = null;
-		this._length -= 1;
-
-		return value;
+		this.length--;
+		return tail!.value;
 	}
 
-	private peekBack() {
-		return this.back?.value;
-	}
-
-	clear() {
-		while (this.pop() !== null) {}
+	shift() {
+		const head = this.head;
+		if (!this.head) {
+			return;
+		} else if (this.head === this.tail) {
+			this.head = null;
+			this.tail = null;
+		} else {
+			this.head = this.head.next;
+			this.head!.prev = this.tail!;
+			this.tail!.next = this.head!;
+		}
+		this.length--;
+		return head!.value;
 	}
 }
