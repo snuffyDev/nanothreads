@@ -1,2 +1,3 @@
+export type { MaybePromise, ThreadArgs } from "./pool";
 export { ThreadPool } from "./pool";
-export { Thread } from "./thread";
+export { workerInit, ThreadImpl, Thread, InlineThread } from "./thread";

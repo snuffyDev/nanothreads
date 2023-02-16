@@ -5,9 +5,9 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.2.6",
+	"version": "0.3.0",
 	"source": "./src/index.ts",
-	"description": "Multi-threading & concurrency library, made for browsers and Node.",
+	"description": "A tiny threading library, made for browsers and Node.",
 	"keywords": [
 		"threads",
 		"worker",
@@ -37,6 +37,7 @@
 		"build:benchmark": "node ./build.mjs && pnpm run build:dts && cp -R ./dist ./browser-test/src/lib",
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
 		"build:dts": "tsc --moduleResolution node --target ESNext -m esnext --declaration true --emitDeclarationOnly --rootDir ./src/ --outDir dist && cp ./dist/index.d.ts ./dist/index.web.d.ts",
+		"export": "node ./scripts/barrel.mjs",
 		"run:esm:node-demo": "node --loader=ts-node/esm --experimental-specifier-resolution=node ./index.mts",
 		"run:cjs:node-demo": "node ./index.cjs.js",
 		"start": "pnpm run build && pnpm run run:esm:node-demo",
@@ -85,13 +86,13 @@
 		}
 	],
 	"devDependencies": {
-		"@size-limit/file": "^8.1.2",
-		"@size-limit/preset-small-lib": "^8.1.0",
+		"@size-limit/file": "^8.2.4",
+		"@size-limit/preset-small-lib": "^8.2.4",
 		"@types/node": "^18.8.3",
 		"esbuild": "^0.16.13",
 		"esbuild-wasm": "^0.16.16",
 		"prettier": "^2.8.0",
-		"size-limit": "^8.1.0",
+		"size-limit": "^8.2.4",
 		"size-limit-node-esbuild": "^0.2.0",
 		"ts-node": "^10.9.1",
 		"tsup": "^6.5.0",

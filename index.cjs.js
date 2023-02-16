@@ -1,4 +1,4 @@
-const { Semaphore, Mutex, Thread } = require("./dist/index.cjs");
+const { InlineThread } = require("./dist/index.cjs");
 const { ThreadPool } = require("./dist/index.cjs");
 const FASTA = (num) => {
 	var last = 42,
@@ -95,7 +95,7 @@ const pool = new ThreadPool({
 	},
 	max: 8,
 });
-new Thread(
+new InlineThread(
 	(name) => {
 		return "Hello " + name;
 	},

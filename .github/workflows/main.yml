@@ -1,5 +1,6 @@
 name: Threadpool Benchmark
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -16,23 +17,24 @@ jobs:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 'latest'
+          version: "latest"
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - name: Run benchmark
-        run: pnpm install && pnpm run build && cd benchmarks && pnpm install && pnpm run run:threadpool | tee output.txt
+        run:
+          pnpm install && pnpm run build && cd benchmarks && pnpm install && pnpm run run:threadpool | tee ./output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Threadpool Benchmark
-          tool: 'benchmarkjs'
+          tool: "benchmarkjs"
           output-file-path: benchmarks/output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           # Show alert with commit comment on detecting possible performance regression
-          alert-threshold: '200%'
+          alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: true
-          alert-comment-cc-users: '@snuffyDev'
+          alert-comment-cc-users: "@snuffyDev"

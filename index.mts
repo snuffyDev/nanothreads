@@ -126,5 +126,6 @@ async function rn() {
 	);
 
 	console.log("nice");
+	pool.terminate();
 }
 rn();

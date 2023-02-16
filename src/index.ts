@@ -1,5 +1,5 @@
 export type { Deferred } from "./utils";
-export { Defer } from "./utils";
+export { Defer, bind } from "./utils";
 export type { IWorkerOptions, IWorkerImpl } from "./internals";
 export { browser } from "./internals";
 export type {
@@ -17,5 +17,6 @@ export type {
 	IThread,
 } from "./models";
 export { StatusCode } from "./models";
-export { Queue, Semaphore } from "./sync";
-export { ThreadPool, Thread } from "./threads";
+export { CircularDoublyLinkedList } from "./sync";
+export type { MaybePromise, ThreadArgs } from "./threads";
+export { ThreadPool, workerInit, ThreadImpl, Thread, InlineThread } from "./threads";

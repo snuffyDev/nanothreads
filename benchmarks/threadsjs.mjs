@@ -2,8 +2,8 @@ import b from "benchmark";
 import { Pool, spawn, Worker } from "threads";
 import { parentPort } from "worker_threads";
 
-const spawnW = () => {
-	return spawn(new Worker("./threads-js-worker.js", { type: "module" }));
+const spawnW = async () => {
+	return await spawn(new Worker("./threads-js-worker.js", { type: "module" }));
 };
 const pool = Pool(spawnW, 4);
 parentPort?.on("message", () => {
@@ -21,6 +21,7 @@ parentPort?.on("message", () => {
 			parentPort?.postMessage(String(event.target));
 		})
 		.run({
+			async: true,
 			teardown: () => {
 				pool.terminate();
 			},
