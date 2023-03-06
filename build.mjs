@@ -1,11 +1,7 @@
-import ts from "typescript";
+
 import { buildSync } from "esbuild";
-import path, { basename } from "path";
 import pkg from "./package.json" assert { type: "json" };
-import tsconfig from "./tsconfig.json" assert { type: "json" };
-import { rmSync, rmdirSync, writeFileSync } from "fs";
-import glob from "fast-glob";
-const sync = glob.sync;
+import { rmSync } from "fs";
 const FORMATS = ["esm", "cjs"];
 
 const ROOT_DIR = "./src/";
