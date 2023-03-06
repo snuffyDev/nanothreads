@@ -4,7 +4,7 @@ import vm from "vm";
 v8.setFlagsFromString("--expose_gc");
 
 const gc = vm.runInNewContext("gc");
-const FILES = ["./threadsjs.mjs", "./tinypool.mjs", "./nt-file.mjs", "./nt-inline.mjs", "./nt-wp.mjs"].reverse();
+const FILES = ["./threadsjs.mjs", "./tinypool.mjs", "./nt-file.mjs", "./nt-inline.mjs"].reverse();
 const createWorker = (path) =>
 	new Promise((resolve, reject) => {
 		const w = new Worker(path, {});
