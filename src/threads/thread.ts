@@ -123,32 +123,26 @@ const createSemaphore = (initialCount: number): Semaphore => {
  *
  */
 export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
+	private declare _inboundLock: Semaphore;
 	private _isBusy = false;
 	private declare _outboundLock: Semaphore;
-	private declare _inboundLock: Semaphore;
 
 	protected declare channel: MessagePort;
 	protected declare handle: InstanceType<typeof WorkerImpl>;
-
 	protected onmessage = async (message: MessageEvent<Output>) => {
-		await this._outboundLock?.acquire();
-		this._inboundLock?.release();
-
 		const r = this.resolvers.shift()!;
+
+		this._outboundLock?.acquire();
 
 		r.resolve(message.data as Output);
 		await yieldMicrotask();
-
-		await this._inboundLock?.acquire();
-		this._outboundLock?.release();
+		this._outboundLock.release();
 
 		if (this.config?.once) {
 			this.terminate();
 		}
 	};
-
 	protected options: IWorkerOptions & { eval?: boolean | undefined } = {};
-
 	protected declare resolvers: Queue<Deferred<Output>>;
 	protected declare src: string | WorkerThreadFn<Args, Output>;
 	protected declare type: "inline" | "file" | "inline-blob";
@@ -237,19 +231,16 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 
 	public async send(...data: Args extends any[] ? Args : [Args]): Promise<Output> {
 		const promise = Defer<Output>();
-		this.resolvers.push(promise);
 
-		await this._inboundLock?.acquire();
 		this._outboundLock?.release();
+		this.resolvers.push(promise);
+		await this._inboundLock?.acquire();
 
 		await yieldMicrotask();
-
-		this.channel.postMessage({ data });
-
 		await this._outboundLock?.acquire();
+		this.channel.postMessage({ data });
 		this._inboundLock?.release();
 
-		await yieldMicrotask();
 		return await promise.promise;
 	}
 

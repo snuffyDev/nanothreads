@@ -3,7 +3,7 @@ import { ThreadPool } from "../dist/index.mjs";
 import fasta from "./fasta.mjs";
 import { parentPort } from "worker_threads";
 
-const nt = new ThreadPool({ task: fasta, count: 4, maxConcurrency: 3 });
+const nt = new ThreadPool({ task: fasta, count: 2, maxConcurrency: 2 });
 
 const NUM = 250000;
 parentPort?.on("message", () => {

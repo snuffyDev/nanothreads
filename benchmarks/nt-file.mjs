@@ -5,8 +5,8 @@ import { fileURLToPath } from "url";
 
 const nt = new ThreadPool({
 	task: fileURLToPath(new URL("./workers/fasta.nt.mjs", import.meta.url)),
-	count: 4,
-	maxConcurrency: 3,
+	count: 2,
+	maxConcurrency: 2 ,
 });
 const NUM = 250000;
 

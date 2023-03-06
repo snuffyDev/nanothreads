@@ -68,8 +68,8 @@ export class ThreadPool<Arguments, Output> extends AbstractThreadPool<Arguments,
 
 	protected override threads: AnyThread<Arguments, Output>[];
 	protected currentThreadId: number = 0;
-	protected queue: Queue<{ args: Arguments extends any[] ? Arguments : [Arguments]; promise: Deferred<Output> }> =
-		new Queue();
+	protected queue: Array<{ args: Arguments extends any[] ? Arguments : [Arguments]; promise: Deferred<Output> }> =
+		new Array();
 
 	constructor(params: ThreadPoolParams<Arguments, Output>) {
 		const { task, count, type, maxConcurrency = 1 } = params;
@@ -94,17 +94,16 @@ export class ThreadPool<Arguments, Output> extends AbstractThreadPool<Arguments,
 	}
 
 	protected getWorker(): AnyThread<Arguments, Output> | null {
-		let worker = this.threads[this.currentThreadId]!;
+		// yconsole.warn("GETTING WORKER");
+		let workers = this.threads.filter((v) => !v.isBusy);
 
-		if (worker && !worker.isBusy) {
-			this.currentThreadId = (this.currentThreadId + 1) % this.count;
-			return worker;
+		if (workers.length) {
+			// console.warn("FIRST FREE WORKER");
+			return workers.shift()!;
 		}
 
 		// look for a free worker
-		for (let idx = 0; idx < this.count; idx++) {
-			worker = this.threads[(this.currentThreadId + idx) % this.count];
-
+		for (const worker of workers) {
 			if (!worker.isBusy) {
 				// return the first not busy match
 				return worker;
@@ -116,19 +115,17 @@ export class ThreadPool<Arguments, Output> extends AbstractThreadPool<Arguments,
 
 	private async tryToExecuteQueuedTask(worker: AnyThread<Arguments, Output>): Promise<void> {
 		const nextJob = this.queue.shift()!;
-
-		if (nextJob) {
-			try {
-				const data = await worker.send(...nextJob.args);
-				// resolve the deferred promise
-				nextJob.promise.resolve(data);
-			} catch (error) {
-				nextJob.promise.reject(error);
-			}
-
-			// drain the queue
-			await this.tryToExecuteQueuedTask(worker);
+		if (!nextJob) return;
+		try {
+			const data = await worker.send(...nextJob.args);
+			// resolve the deferred promise
+			nextJob.promise.resolve(data);
+		} catch (error) {
+			nextJob.promise.reject(error);
 		}
+
+		// drain the queue
+		return Promise.resolve(this.tryToExecuteQueuedTask(worker));
 	}
 
 	public async terminate(): Promise<void> {
@@ -142,15 +139,14 @@ export class ThreadPool<Arguments, Output> extends AbstractThreadPool<Arguments,
 			const p = Defer<Output>();
 			this.queue.push({ args, promise: p });
 
-			return await p.promise;
+			return p.promise;
 		}
 
 		const data = await worker.send(...args);
-
-		if (this.queue.length > 0) {
-			await this.tryToExecuteQueuedTask(worker);
-		} else {
+		if (!this.queue.length) {
 			worker.isBusy = false;
+		} else {
+			this.tryToExecuteQueuedTask(worker);
 		}
 
 		return data;
