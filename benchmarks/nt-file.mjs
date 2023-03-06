@@ -3,8 +3,11 @@ import { ThreadPool } from "../dist/index.mjs";
 import { parentPort } from "worker_threads";
 import { fileURLToPath } from "url";
 
-const nt = new ThreadPool({ task: fileURLToPath(new URL("./nt-file-worker.mjs", import.meta.url)), max: 4 });
-
+const nt = new ThreadPool({
+	task: fileURLToPath(new URL("./workers/fasta.nt.mjs", import.meta.url)),
+	count: 4,
+	maxConcurrency: 3,
+});
 const NUM = 250000;
 
 parentPort?.on("message", () => {

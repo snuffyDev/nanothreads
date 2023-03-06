@@ -7,7 +7,7 @@ export class Worker extends _Worker {
 	constructor(src, opts = {}) {
 		super(src, opts);
 
-		super.on("message", this.onmessage.bind(this));
+		this.on("message", (m) => this.onmessage?.(m));
 	}
 	onmessage = (e) => {};
 	terminate() {

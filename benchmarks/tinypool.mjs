@@ -2,7 +2,7 @@ import b from "benchmark";
 import { Tinypool } from "tinypool";
 import { parentPort } from "worker_threads";
 const tppool = new Tinypool({ filename: new URL("./tinypool-worker.js", import.meta.url).href, maxThreads: 4 });
-const num = 2500000;
+const num = 250000;
 parentPort?.on("message", () => {
 	new b.Suite()
 		.add(

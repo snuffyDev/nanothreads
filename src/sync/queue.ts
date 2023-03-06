@@ -10,15 +10,18 @@ class Node<T> {
 	}
 }
 
-export class CircularDoublyLinkedList<T> {
+export class Queue<T> {
 	private head: Node<T> | null;
 	private tail: Node<T> | null;
-	private length: number;
+	private _length: number;
 
 	constructor() {
 		this.head = null;
 		this.tail = null;
-		this.length = 0;
+		this._length = 0;
+	}
+	public get length() {
+		return this._length;
 	}
 
 	push(value: T) {
@@ -35,7 +38,7 @@ export class CircularDoublyLinkedList<T> {
 			this.head.prev = newNode;
 			this.tail = newNode;
 		}
-		this.length++;
+		this._length++;
 	}
 
 	unshift(value: T) {
@@ -52,7 +55,7 @@ export class CircularDoublyLinkedList<T> {
 			this.tail!.next = newNode;
 			this.head = newNode;
 		}
-		this.length++;
+		this._length++;
 	}
 
 	pop() {
@@ -67,7 +70,7 @@ export class CircularDoublyLinkedList<T> {
 			this.tail!.next = this.head;
 			this.head!.prev = this.tail;
 		}
-		this.length--;
+		this._length--;
 		return tail!.value;
 	}
 
@@ -83,7 +86,7 @@ export class CircularDoublyLinkedList<T> {
 			this.head!.prev = this.tail!;
 			this.tail!.next = this.head!;
 		}
-		this.length--;
+		this._length--;
 		return head!.value;
 	}
 }

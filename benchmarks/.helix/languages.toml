@@ -1,0 +1,6 @@
+[[language]]
+name = "typescript"
+scope = "source.typescript"
+file-types = ["ts", "tsx", "js", "mjs", "cjs"]
+language-server = { command = "typescript-language-server", args = ["--stdio"]}
+

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import { fileURLToPath } from "node:url";
 import { Semaphore, Mutex, Thread } from "./dist";
 import { ThreadPool } from "./dist";
 export const FASTA = (num: number) => {
@@ -99,15 +100,9 @@ export const FASTA = (num: number) => {
 const sleep = (ms = 500) => new Promise((res) => setTimeout(res, ms));
 
 const pool = new ThreadPool<[number], number>({
-	task: (data) => {
-		const p = {};
-		p.promise = new Promise((res) => {
-			p.resolve = res;
-		});
-		p.resolve("WOWOWOWOW DATA: " + data);
-		return p.promise;
-	},
-	max: 8,
+	task: "./worker.mjs",
+	count: 4,
+	maxConcurrency: 1,
 });
 async function rn() {
 	let runs = 10;
@@ -116,13 +111,12 @@ async function rn() {
 		// console.log("running thread", idx);
 		tasks.push(pool.exec(idx));
 	}
-	console.log(tasks);
 	console.log(
 		await Promise.all(
 			tasks.map(async (f) => {
 				return await f;
 			}),
-		),
+		).then((v) => console.log(v)),
 	);
 
 	console.log("nice");

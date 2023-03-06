@@ -5,7 +5,7 @@ import { parentPort } from "worker_threads";
 const spawnW = async () => {
 	return await spawn(new Worker("./threads-js-worker.js", { type: "module" }));
 };
-const pool = Pool(spawnW, 4);
+const pool = Pool(spawnW, 2);
 parentPort?.on("message", () => {
 	new b.Suite()
 		.add(

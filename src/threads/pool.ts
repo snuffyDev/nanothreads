@@ -1,73 +1,165 @@
 import { InlineThread, Thread } from "./thread";
-import type { WorkerThreadFn } from "../models";
+import type { StatusCode, WorkerThreadFn } from "../models";
+import { Defer } from "../utils";
+import { Queue } from "../sync";
+import type { Deferred } from "../utils";
 
 /** Utility type for a value that may or may not be a Promise */
 export type MaybePromise<P> = P | Promise<P>;
 
-const TASK_SYM: unique symbol = Symbol("#TASK");
-
 /** Utility type for defining Worker Thread arguments */
 export type ThreadArgs<T> = T | [...args: T[]];
 
-export class ThreadPool<Arguments extends ThreadArgs<any>, Output = unknown> {
-	#threads: Map<number, InlineThread<Arguments, MaybePromise<Output>> | Thread<Arguments, MaybePromise<Output>>> =
-		new Map();
-	#curThreadNum = 0;
-	#max = 0;
+export type ThreadPoolParams<Arguments extends ThreadArgs<any>, Output> = {
+	task: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL;
+	count: number;
+	type?: "module" | undefined;
+	maxConcurrency?: number;
+};
 
-	private [TASK_SYM]: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL;
-	constructor({
-		task,
-		max = 4,
-		type = undefined,
-	}: {
-		task: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL;
-		max: number;
-		type?: "module" | undefined;
-	}) {
-		// Sets the thread count
-		this.#max = Math.max(max, 1);
-		this.#curThreadNum = 0;
-		const TCtor = typeof task === "function" ? (InlineThread as typeof InlineThread) : (Thread as typeof Thread);
-		this[TASK_SYM] = task;
+export type AnyThread<Arguments, Output> =
+	| InlineThread<Arguments, MaybePromise<Output>>
+	| Thread<Arguments, MaybePromise<Output>>;
 
-		for (let idx = -1; ++idx < this.#max; ) {
-			this.#threads.set(
-				idx,
-				new TCtor<Arguments, MaybePromise<Output>>(
-					this[TASK_SYM] as WorkerThreadFn<Arguments, MaybePromise<Output>> & string & URL,
-					{ once: false, id: idx, type },
-				),
-			);
+export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any>, Output> {
+	protected declare abstract threads: Array<AnyThread<Arguments, Output>>;
+	protected declare count: number;
+
+	constructor(
+		protected task: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL,
+		count: number,
+		protected type: "module" | undefined = undefined,
+	) {
+		this.count = Math.max(count, 1);
+	}
+
+	/** Helper method for getting a worker thread from the pool */
+	protected abstract getWorker(): AnyThread<Arguments, Output> | null;
+
+	/** Kills each thread in the pool, terminating it */
+	public abstract terminate(): Promise<void>;
+
+	/** Executes the task on a thread */
+	public abstract exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output>;
+
+	/** Kill a specific thread */
+	public abstract kill(num: number): Promise<StatusCode | null>;
+}
+
+/**
+ * A static thread pool that will execute a task/function on different threads.
+ *
+ * @class ThreadPool
+ * @example
+ * import { ThreadPool } from 'nanothreads';
+ *
+ * const pool = new ThreadPool<string, string>({
+ * 	task: (name) => `Hello ${name}!`,
+ * 	count: 4
+ * });
+ *
+ * await pool.exec("Paul") // output: "Hello Paul!"
+ */
+export class ThreadPool<Arguments, Output> extends AbstractThreadPool<Arguments, Output> {
+	protected declare readonly task: WorkerThreadFn<Arguments, MaybePromise<Output>> & (string | URL);
+	protected declare readonly count: number;
+	protected declare readonly type: "module" | undefined;
+	protected declare readonly maxConcurrency: number;
+
+	protected override threads: AnyThread<Arguments, Output>[];
+	protected currentThreadId: number = 0;
+	protected queue: Queue<{ args: Arguments extends any[] ? Arguments : [Arguments]; promise: Deferred<Output> }> =
+		new Queue();
+
+	constructor(params: ThreadPoolParams<Arguments, Output>) {
+		const { task, count, type, maxConcurrency = 1 } = params;
+		super(task, count, type);
+		this.task = task as WorkerThreadFn<Arguments, Output> & (string | URL);
+
+		this.count = count;
+		this.type = type;
+		this.maxConcurrency = maxConcurrency;
+		this.threads = new Array(count).fill(undefined);
+
+		const TCtor = typeof task === "function" ? InlineThread : Thread;
+
+		for (let idx = -1; ++idx < count; ) {
+			this.threads[idx] = new TCtor(task as WorkerThreadFn<Arguments, Output> & (string | URL), {
+				once: false,
+				id: idx,
+				type,
+				maxConcurrency,
+			});
 		}
 	}
 
-	private nextInt(value = 1) {
-		const worker = this.#threads.get(this.#curThreadNum);
-		this.#curThreadNum = this.#curThreadNum === this.#threads.size - 1 ? 0 : this.#curThreadNum + 1;
-		return worker;
+	protected getWorker(): AnyThread<Arguments, Output> | null {
+		let worker = this.threads[this.currentThreadId]!;
+
+		if (worker && !worker.isBusy) {
+			this.currentThreadId = (this.currentThreadId + 1) % this.count;
+			return worker;
+		}
+
+		// look for a free worker
+		for (let idx = 0; idx < this.count; idx++) {
+			worker = this.threads[(this.currentThreadId + idx) % this.count];
+
+			if (!worker.isBusy) {
+				// return the first not busy match
+				return worker;
+			}
+		}
+
+		return null;
 	}
 
-	/** Kill a specific thread (cannot be undone!) */
-	public kill(num: number) {
-		const thread = this.#threads.get(num);
-		if (!thread) return;
-		return thread.terminate();
+	private async tryToExecuteQueuedTask(worker: AnyThread<Arguments, Output>): Promise<void> {
+		const nextJob = this.queue.shift()!;
+
+		if (nextJob) {
+			try {
+				const data = await worker.send(...nextJob.args);
+				// resolve the deferred promise
+				nextJob.promise.resolve(data);
+			} catch (error) {
+				nextJob.promise.reject(error);
+			}
+
+			// drain the queue
+			await this.tryToExecuteQueuedTask(worker);
+		}
 	}
 
-	/** Kills each thread in the pool */
-	public async terminate() {
-		for (const thread of this.#threads.values()) {
-			await thread.terminate();
-		}
-		this.#threads.clear();
+	public async terminate(): Promise<void> {
+		await Promise.all(this.threads.map((thread) => thread.terminate()));
 	}
-	/** Executes the `task` passed in to the ThreadPool's contstructor */
-	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
-		try {
-			if (!this.#threads.size) throw new Error("Cannot execute a terminated thread pool.");
-			return Promise.resolve(this.nextInt()!).then((t) => t.send(...args)) as Promise<Output>;
-		} finally {
+
+	public async exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
+		const worker = this.getWorker();
+
+		if (!worker) {
+			const p = Defer<Output>();
+			this.queue.push({ args, promise: p });
+
+			return await p.promise;
 		}
+
+		const data = await worker.send(...args);
+
+		if (this.queue.length > 0) {
+			await this.tryToExecuteQueuedTask(worker);
+		} else {
+			worker.isBusy = false;
+		}
+
+		return data;
+	}
+
+	public async kill(num: number): Promise<StatusCode | null> {
+		const thread = this.threads[num];
+		if (!thread) return null;
+		await thread.terminate();
+		return null;
 	}
 }

@@ -8,11 +8,9 @@
 		"strict": true,
 		"sourceMap": true,
 		"resolveJsonModule": true,
-		"baseUrl": "./src",
-		"allowJs": true,
 		"rootDir": ".",
+		"allowJs": true,
 		"declaration": true,
-		"emitDeclarationOnly": true,
 		"skipDefaultLibCheck": true,
 		"esModuleInterop": true,
 		"downlevelIteration": true,
@@ -24,8 +22,7 @@
 		"noImplicitReturns": true,
 		"strictFunctionTypes": false,
 		"skipLibCheck": true,
-		"types": ["node"],
-		"paths": { ".": ["./src/*"] }
+		"types": ["node"]
 	},
 	"include": ["src/**/*.ts", "src/**/*.d.ts", "src/internals/NodeWorker.ts"],
 	"exclude": [

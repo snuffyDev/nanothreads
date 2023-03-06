@@ -1,7 +1,9 @@
 import { browser } from "./utils";
+
 /** @internal */
 export interface IWorkerOptions extends WorkerOptions {}
 /** @internal */
+
 class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {
 	constructor(src: string | URL, opts: (IWorkerOptions & { eval?: boolean | undefined }) | undefined = {}) {
 		super(src, opts);

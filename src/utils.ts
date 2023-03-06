@@ -1,5 +1,3 @@
-import { browser } from "./internals";
-
 export interface Deferred<T> {
 	resolve(obj: T): void;
 
@@ -8,18 +6,15 @@ export interface Deferred<T> {
 	promise: Promise<T>;
 }
 export function Defer<T>() {
-	const deferred: Partial<Deferred<T>> = {};
+	const deferred: { [key in keyof Deferred<T>]: Deferred<T>[key] | Promise<any> | null } = {
+		promise: Promise.resolve(),
+		reject: null,
+		resolve: null,
+	};
 
 	deferred.promise = new Promise<T>((resolve, reject) => {
 		deferred.resolve = resolve;
 		deferred.reject = reject;
 	});
 	return deferred as Deferred<T>;
-}
-
-/** @internal bind `this` for a function to `ctx`  */
-export function bind(fn: any, ctx: any) {
-	return function bound(...args: any[]) {
-		return fn.apply(ctx, args);
-	};
 }

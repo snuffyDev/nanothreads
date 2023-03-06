@@ -5,7 +5,7 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"run:threadpool": "node bench.mjs"
+		"run:threadpool": "cd .. && npm run build && cd ./benchmarks/ && node ./bench.mjs"
 	},
 	"keywords": [],
 	"author": "",
@@ -15,6 +15,7 @@
 		"@types/vscode": "^1.75.0",
 		"benchmark": "^2.1.4",
 		"benny": "^3.7.1",
+		"poolifier": "^2.3.7",
 		"tinypool": "^0.3.1"
 	},
 	"dependencies": {

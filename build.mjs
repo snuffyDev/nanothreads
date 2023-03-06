@@ -1,7 +1,11 @@
+import ts from "typescript";
 import { buildSync } from "esbuild";
-import path from "path";
+import path, { basename } from "path";
 import pkg from "./package.json" assert { type: "json" };
-import { rmSync, rmdirSync } from "fs";
+import tsconfig from "./tsconfig.json" assert { type: "json" };
+import { rmSync, rmdirSync, writeFileSync } from "fs";
+import glob from "fast-glob";
+const sync = glob.sync;
 const FORMATS = ["esm", "cjs"];
 
 const ROOT_DIR = "./src/";
@@ -21,9 +25,11 @@ const DEFAULT_OPTIONS = {
 	keepNames: true,
 	minifyWhitespace: true,
 	minifyIdentifiers: true,
+	drop: ["console", "debugger"],
 	minifySyntax: true,
 	minify: true,
 };
+
 try {
 	rmSync("./dist", { recursive: true });
 } catch {}

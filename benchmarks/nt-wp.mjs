@@ -1,17 +1,16 @@
 import b from "benchmark";
-import { ThreadPool } from "../dist/index.mjs";
-import fasta from "./fasta.mjs";
 import { parentPort } from "worker_threads";
+import { WorkerPool } from "../dist/index.mjs";
 
-const nt = new ThreadPool({ task: fasta, count: 4, maxConcurrency: 3 });
+const pool = new WorkerPool({ task: "./nt.test.mjs", count: 4, maxConcurrency: 1, type: "module" });
 
 const NUM = 250000;
 parentPort?.on("message", () => {
 	new b.Suite()
 		.add(
-			"nanothreads ([inline] threadpool)",
+			"nanothreads ([file EXP] threadpool)",
 			async () => {
-				return await nt.exec(NUM);
+				return await pool.exec(NUM);
 				// return await doThings(NUM);
 			},
 			{ async: true },
@@ -22,7 +21,7 @@ parentPort?.on("message", () => {
 		.run({
 			async: true,
 			teardown: async () => {
-				return await nt.terminate();
+				return await pool;
 			},
 		});
 });

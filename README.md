@@ -33,13 +33,13 @@ yarn add nanothreads
 
 ```ts
 // Browsers
-import { ThreadPool } from "nanothreads/index.web";
+import { ThreadPool } from "nanothreads/browser";
 
 // Node.js
 import { ThreadPool } from "nanothreads";
 ```
 
-> Note: Browsers must specify the import path as `nanothreads/index.web`.
+> Note: Browsers must specify the import path as `nanothreads/browser`.
 
 #### Kitchen Sink
 
