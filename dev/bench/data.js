@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1681660563481,
+  "lastUpdate": 1681660646416,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -258,6 +258,58 @@ window.BENCHMARK_DATA = {
             "range": "±34.80%",
             "unit": "ops/sec",
             "extra": "13 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "63ebe3de34473ee1c2f18950fed6c78c44069516",
+          "message": "update package.json",
+          "timestamp": "2023-04-16T11:55:59-04:00",
+          "tree_id": "dbdb2ecc2311eb7a78f22346d0842eaf1b570799",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/63ebe3de34473ee1c2f18950fed6c78c44069516"
+        },
+        "date": 1681660645322,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "nanothreads ([inline] threadpool)",
+            "value": 298365,
+            "range": "±32.78%",
+            "unit": "ops/sec",
+            "extra": "24 samples"
+          },
+          {
+            "name": "nanothreads ([file] threadpool)",
+            "value": 326982,
+            "range": "±5.27%",
+            "unit": "ops/sec",
+            "extra": "54 samples"
+          },
+          {
+            "name": "tinypool",
+            "value": 173740,
+            "range": "±9.07%",
+            "unit": "ops/sec",
+            "extra": "55 samples"
+          },
+          {
+            "name": "threads.js (threadpool)",
+            "value": 1606,
+            "range": "±33.76%",
+            "unit": "ops/sec",
+            "extra": "12 samples"
           }
         ]
       }
