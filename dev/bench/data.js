@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1678108745518,
+  "lastUpdate": 1681660563481,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -206,6 +206,58 @@ window.BENCHMARK_DATA = {
             "range": "±42.53%",
             "unit": "ops/sec",
             "extra": "10 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "6c538828ae27b11ee6044206c8d0fb9277ab1ffc",
+          "message": "performance++\nadd promise pool\ninternal overhaul",
+          "timestamp": "2023-04-16T11:54:40-04:00",
+          "tree_id": "31736b3fc470f1e9d7ada836b7c79e1bdbef93a4",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/6c538828ae27b11ee6044206c8d0fb9277ab1ffc"
+        },
+        "date": 1681660562609,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "nanothreads ([inline] threadpool)",
+            "value": 314583,
+            "range": "±34.79%",
+            "unit": "ops/sec",
+            "extra": "39 samples"
+          },
+          {
+            "name": "nanothreads ([file] threadpool)",
+            "value": 473529,
+            "range": "±7.83%",
+            "unit": "ops/sec",
+            "extra": "48 samples"
+          },
+          {
+            "name": "tinypool",
+            "value": 233088,
+            "range": "±10.46%",
+            "unit": "ops/sec",
+            "extra": "48 samples"
+          },
+          {
+            "name": "threads.js (threadpool)",
+            "value": 2117,
+            "range": "±34.80%",
+            "unit": "ops/sec",
+            "extra": "13 samples"
           }
         ]
       }
