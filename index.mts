@@ -1,6 +1,5 @@
 //@ts-nocheck
 import { fileURLToPath } from "node:url";
-import { Semaphore, Mutex, Thread } from "./dist";
 import { ThreadPool } from "./dist";
 export const FASTA = (num: number) => {
 	var last = 42,
@@ -111,13 +110,7 @@ async function rn() {
 		// console.log("running thread", idx);
 		tasks.push(pool.exec(idx));
 	}
-	console.log(
-		await Promise.all(
-			tasks.map(async (f) => {
-				return await f;
-			}),
-		).then((v) => console.log(v)),
-	);
+	console.log(await Promise.all(tasks).then((v) => console.log(v)));
 
 	console.log("nice");
 	pool.terminate();

@@ -1,4 +1,4 @@
-import type { StatusCode } from "./statuses";
+import type { StatusCode } from "./statuses.js";
 
 export type GetReturnType<T> = T extends (...args: unknown[]) => Promise<ReturnType<infer Value>>
 	? ReturnType<Value>
@@ -8,7 +8,6 @@ export type WorkerThreadFn<Args extends any | any[], Output = unknown> = (
 	...args: Args extends [...args: any[]] ? Args : [Args]
 ) => Output extends Promise<infer R> ? Promise<Awaited<R>> : Output;
 
-export type UnsubscribeFn = () => void;
 export interface IThreadOptions {
 	once?: boolean;
 }

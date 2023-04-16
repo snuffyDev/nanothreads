@@ -1,0 +1,50 @@
+import { browser } from "../internals/utils.js";
+import type { WorkerThreadFn } from "../models/thread.js";
+
+/**
+ * Initialization function for script-based worker threads
+ * @example
+ * ```ts
+ * // worker.js
+ * import { workerInit } from 'nanothreads.js.js';
+ *
+ * workerInit(self, (a, b) => a + b);
+ * ```
+ *
+ * @see {@link Thread} to see how to create the worker thread
+ *
+ */
+export const workerInit = <Args extends [...args: unknown[]] | any, Output>(
+	target: DedicatedWorkerGlobalScope["self"] | import("node:worker_threads").MessagePort,
+	func: WorkerThreadFn<Args, Output>,
+	maxConcurrent: number = 1,
+) => {
+	const f = async (...args: Args extends any[] ? Args : [Args]) => func(...args);
+
+	const drain: (
+		callback: (value: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => void | PromiseLike<void>,
+		...args: Args extends any[] ? Args : [Args]
+	) => void = async function (callback, ...args) {
+		const r = await f(...args);
+		callback(r);
+	};
+
+	if (browser) {
+		(target as DedicatedWorkerGlobalScope["self"]).onmessage = (e) => {
+			const port = e.ports[0];
+			const callback = (v: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => port.postMessage(v);
+			port.onmessage = ({ data }) => {
+				void drain(callback, ...data.data);
+			};
+		};
+	} else if ("on" in target) {
+		target.on("message", function ref(e) {
+			const port = e.port;
+			const callback = (v: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => port.postMessage(v);
+			port.onmessage = ({ data }: { data: { data: Args extends any[] ? Args : [Args] } }) => {
+				void drain(callback, ...data.data);
+			};
+			target.off("message", ref);
+		});
+	}
+};

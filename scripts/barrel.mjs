@@ -50,7 +50,10 @@ function recursiveDirRead(path) {
 				type.push(...typeExports);
 				fs.appendFileSync(
 					makePath(path, "index.ts"),
-					`export type { ${typeExports.filter((item) => item !== "").join(", ")} } from './${entry.slice(0, -3)}';\n`,
+					`export type { ${typeExports.filter((item) => item !== "").join(", ")} } from './${entry.slice(
+						0,
+						-3,
+					)}.js';\n`,
 					{ encoding: "utf-8" },
 				);
 			}
@@ -58,7 +61,7 @@ function recursiveDirRead(path) {
 				normal.push(...normExports);
 				fs.appendFileSync(
 					makePath(path, "index.ts"),
-					`export { ${normExports.filter((item) => item !== "").join(", ")} } from './${entry.slice(0, -3)}';\n`,
+					`export { ${normExports.filter((item) => item !== "").join(", ")} } from './${entry.slice(0, -3)}.js';\n`,
 					{ encoding: "utf-8" },
 				);
 			}

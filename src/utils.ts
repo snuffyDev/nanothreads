@@ -1,20 +1,41 @@
-export interface Deferred<T> {
-	resolve(obj: T): void;
+export class ManualPromise<T> {
+	private _resolve!: (value: T | PromiseLike<T>) => void;
+	private _reject!: (reason?: any) => void;
+	private _promise: Promise<T>;
 
-	reject(reason?: unknown): void;
+	constructor() {
+		this._promise = new Promise<T>((resolve, reject) => {
+			this._resolve = resolve;
+			this._reject = reject;
+		});
+	}
 
-	promise: Promise<T>;
-}
-export function Defer<T>() {
-	const deferred: { [key in keyof Deferred<T>]: Deferred<T>[key] | Promise<any> | null } = {
-		promise: Promise.resolve(),
-		reject: null,
-		resolve: null,
-	};
+	public resolve(value: T | PromiseLike<T>): void {
+		this._resolve(value);
+	}
 
-	deferred.promise = new Promise<T>((resolve, reject) => {
-		deferred.resolve = resolve;
-		deferred.reject = reject;
-	});
-	return deferred as Deferred<T>;
+	public reject(reason?: any): void {
+		this._reject(reason);
+	}
+
+	public then<TResult1 = T, TResult2 = never>(
+		onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined,
+		onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined,
+	): Promise<TResult1 | TResult2> {
+		return this._promise.then(onFulfilled, onRejected);
+	}
+
+	public catch<TResult = never>(
+		onRejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
+	): Promise<T | TResult> {
+		return this._promise.catch(onRejected);
+	}
+
+	public finally(onFinally?: (() => void) | null | undefined): Promise<T> {
+		return this._promise.finally(onFinally);
+	}
+
+	get [Symbol.toStringTag]() {
+		return "Promise";
+	}
 }

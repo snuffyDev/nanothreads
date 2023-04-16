@@ -1,3 +1,3 @@
-export type { MaybePromise, ThreadArgs, ThreadPoolParams, AnyThread } from './pool';
-export { ThreadPool } from './pool';
-export { yieldMicrotask, workerInit, ThreadImpl, Thread, InlineThread } from './thread';
+export type { MaybePromise, ThreadArgs, ThreadPoolParams, AnyThread } from "./pool.js";
+export { ThreadPool } from "./pool.js";
+export { yieldMicrotask, ThreadImpl, Thread, InlineThread } from "./thread.js";

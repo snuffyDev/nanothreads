@@ -67,5 +67,5 @@ export default (n) => {
 		num *= 10n; // mpz_mul_ui(num, num, 10)
 		//#endregion inline eliminateDigit(d)
 	}
-	return Promise.resolve(output);
+	return output;
 };

@@ -14,7 +14,7 @@ Nanothreads is only ~2 KB for browsers, ~2.3 KB for Node.js, making it a _super_
 - Tiny bundle size! :see_no_evil:
 - 100% Fully Typed :100:
 - Super fast, super efficient :fire:
-  - Each test is executed within separate Worker's
+  - Check out the [Historical Benchmarks]() or the [Benchmarks](#benchmarks) section of the README for more info
 - Works both in the browser, and Node :eyes:
 
 ### Install
@@ -65,7 +65,7 @@ const pool = new ThreadPool<string, Quote>({
 			.then((res) => res.json())
 			.then((json) => json as Quote);
 	},
-	max: 5, // Max number of threads = 5
+	count: 5, // number of threads = 5
 });
 
 // Using the thread pool
@@ -91,3 +91,18 @@ await pool.terminate();
 API Documentation can be found here:
 [snuffydev.github.io/nanothreads/docs](https://snuffydev.github.io/nanothreads/docs/index.html), or in the `/docs`
 directory on GitHub.
+
+### Benchmarks
+
+You can find the historical benchmarks [here]().
+
+Provided below is the results from my own machine (Intel i7-4700MQ, on Arch Linux):
+
+```
+
+nanothreads ([inline] threadpool) x 895,733 ops/sec ±5.75% (68 runs sampled)
+nanothreads ([file] threadpool) x 932,900 ops/sec ±5.10% (69 runs sampled)
+tinypool x 355,282 ops/sec ±21.83% (50 runs sampled)
+threads.js (threadpool) x 1,618 ops/sec ±56.60% (9 runs sampled)
+
+```

@@ -1,4 +1,5 @@
 import { Worker as _Worker } from "worker_threads";
+
 /** @internal */
 export class Worker extends _Worker {
 	/**
@@ -7,12 +8,14 @@ export class Worker extends _Worker {
 	constructor(src, opts = {}) {
 		super(src, opts);
 
-		this.on("message", (m) => this.onmessage?.(m));
+		this.off = this.off.bind(this);
+		this.on = this.on.bind(this);
+		this.on("message", this.onmessage);
 	}
-	onmessage = (e) => {};
+
+	onmessage(e) {}
+
 	terminate() {
-		const that = this;
-		super.off("message", that.onmessage);
 		return super.terminate();
 	}
 

@@ -1,2 +1,2 @@
-export type { IWorkerOptions, IWorkerImpl } from './NodeWorker';
-export { browser } from './utils';
+export type { IWorkerOptions, IWorkerImpl } from "./NodeWorker.js";
+export { browser } from "./utils.js";

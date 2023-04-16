@@ -1,7 +1,8 @@
-import { browser } from "./utils";
+import { browser } from "./utils.js";
 
 /** @internal */
 export interface IWorkerOptions extends WorkerOptions {}
+
 /** @internal */
 
 class BrowserImpl<T> extends Worker implements Pick<Worker & import("worker_threads").Worker, "postMessage"> {

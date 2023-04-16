@@ -1,4 +1,4 @@
-import type { StatusCode } from "./statuses";
+import type { StatusCode } from "./statuses.js";
 
 export interface ThreadError extends Error {
 	status: StatusCode;

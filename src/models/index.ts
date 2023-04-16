@@ -1,5 +1,3 @@
-export type { ThreadError } from './error';
-export type { Releaser, Resolver } from './promises';
-export type { Callback, ArgCallback, ISemaphoreQueueEntry, ISemaphore } from './semaphore';
-export { StatusCode } from './statuses';
-export type { GetReturnType, WorkerThreadFn, UnsubscribeFn, IThreadOptions, IThread } from './thread';
+export type { ThreadError } from "./error.js";
+export { StatusCode } from "./statuses.js";
+export type { GetReturnType, WorkerThreadFn, IThreadOptions, IThread } from "./thread.js";
