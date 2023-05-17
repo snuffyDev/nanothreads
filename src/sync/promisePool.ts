@@ -20,44 +20,44 @@ import { Queue } from ".";
  * ```
  */
 
+type PromiseExecutor<T> = () => Promise<T>;
+
 export class PromisePool {
-	private concurrency: number;
-	private tasks = new Queue<Promise<any>>();
-	private activeTaskId: number = 0;
+	private pendingTasks: Queue<() => Promise<any>> = new Queue();
+	private activeTasks: number = 0;
 
-	constructor(concurrency: number) {
-		this.concurrency = Math.max(1, concurrency);
-	}
+	constructor(private readonly concurrency: number) {}
 
-	async add<T = void>(asyncTaskFn: () => Promise<T>): Promise<T> {
-		const taskPromise = asyncTaskFn();
-		// Add the task to the tasks map
-		this.tasks.push(taskPromise);
-
-		// Process tasks until the concurrency limit is reached
-		while (this.activeTaskId > this.concurrency) {
-			await this.tasks.shift()!;
+	private async runTask(task: () => Promise<any>): Promise<void> {
+		this.activeTasks++;
+		try {
+			await task();
+		} finally {
+			this.activeTasks--;
+			this.runNext();
 		}
-
-		// Start the task and increment the active task count
-		this.activeTaskId++;
-
-		taskPromise
-			.then(() => {
-				this.activeTaskId--;
-			})
-			.catch(() => {
-				this.activeTaskId--;
-			});
-
-		return taskPromise;
 	}
 
-	private race() {
-		return new Promise((resolve, reject) => {
-			for (const task of this.tasks) {
-				task!.then(resolve, reject);
-			}
+	private runNext(): void {
+		if (this.activeTasks < this.concurrency && this.pendingTasks.length > 0) {
+			const nextTask = this.pendingTasks.shift()!;
+			this.runTask(nextTask);
+		}
+	}
+
+	async add<T>(task: () => Promise<T>): Promise<T> {
+		return new Promise<T>((resolve, reject) => {
+			const wrappedTask = async () => {
+				try {
+					const result = await task();
+					resolve(result);
+				} catch (error) {
+					reject(error);
+				}
+			};
+
+			this.pendingTasks.push(wrappedTask);
+			this.runNext();
 		});
 	}
 }

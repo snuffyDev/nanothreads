@@ -1,5 +1,5 @@
 import { InlineThread, Thread, yieldMicrotask } from "./thread.js";
-import type { StatusCode, WorkerThreadFn } from "../models";
+import type { WorkerThreadFn } from "../models";
 import { Queue } from "../sync/index.js";
 /** Utility type for a value that may or may not be a Promise */
 export type MaybePromise<P> = P | Promise<P>;
@@ -39,6 +39,11 @@ export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any>, Outp
 	protected abstract getWorker(): AnyThread<Arguments, Output> | null;
 }
 
+type TaskQueueItem<Arguments> = {
+	args: Arguments[];
+	resolve: (value: any) => void;
+	reject: (reason?: any) => void;
+};
 /**
  * A static thread pool that will execute a task/function on different threads.
  *
@@ -54,77 +59,72 @@ export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any>, Outp
  * await pool.exec("Paul") // output: "Hello Paul!"
  */
 export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends AbstractThreadPool<Arguments, Output> {
-	public async terminate(): Promise<void> {
-		await Promise.all(this.threads.map((thread) => thread.terminate()));
-	}
-
 	protected declare readonly count: number;
-	private readonly taskQueue: Queue<{
-		args: Arguments[];
-		resolve: (value: any) => void;
-		reject: (reason?: any) => void;
-	}>;
+	private readonly taskQueue: Queue<TaskQueueItem<Arguments>>;
 
-	private nextWorkerIndex: number;
-
+	private idleWorkerQueue: Queue<AnyThread<Arguments, Output>>;
 	constructor(params: ThreadPoolParams<Arguments, Output>) {
 		const { task, count, maxConcurrency = 1, type } = params;
 		super(task, count, type);
 
-		this.count = count;
+		this.count = Math.max(1, count);
 		this.threads = new Array(count);
 		this.taskQueue = new Queue();
-		this.nextWorkerIndex = 0;
+		this.idleWorkerQueue = new Queue();
 
 		const TCtor = typeof task === "function" ? InlineThread : Thread;
 
 		for (let idx = 0; idx < count; idx++) {
-			this.threads[idx] = new TCtor(task as any, {
+			const worker = new TCtor(task as any, {
 				once: false,
 				id: idx,
 				maxConcurrency,
 				type,
 			});
+			this.threads[idx] = worker as AnyThread<Arguments, Output>;
+			this.idleWorkerQueue.push(worker as AnyThread<Arguments, Output>);
 		}
 	}
 
 	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
 		const worker = this.getWorker();
-
 		if (!worker) {
 			return new Promise<Output>((resolve, reject) => {
 				this.taskQueue.push({ args, resolve, reject });
 			});
 		}
 
-		return this.executeTask(worker, args as Arguments);
+		return this.executeTask(worker, args);
 	}
 
-	protected getWorker(): AnyThread<Arguments, Output> | null {
-		const startIndex = this.nextWorkerIndex;
+	public getWorker(): AnyThread<Arguments, Output> | null {
+		const worker = this.idleWorkerQueue.shift();
+		if (!worker || worker.isBusy) {
+			return null;
+		}
 
-		do {
-			const worker = this.threads[this.nextWorkerIndex];
-			this.nextWorkerIndex = (this.nextWorkerIndex + 1) % this.count;
-
-			if (!worker.isBusy) {
-				return worker;
-			}
-		} while (this.nextWorkerIndex !== startIndex);
-
-		return null;
+		return worker;
 	}
 
-	private async executeTask(worker: AnyThread<Arguments, Output>, args: Arguments): Promise<Output> {
-		const data = await worker.send(...(args as Arguments[]));
+	private async executeTask(worker: AnyThread<Arguments, Output>, args: ThreadArgs<Arguments>): Promise<Output> {
+		const data = await worker.send.call(worker, args as Arguments[]);
 
 		if (this.taskQueue.length > 0) {
-			const nextTask = this.taskQueue.shift()!;
-			this.executeTask(worker, nextTask.args as Arguments)
-				.then(nextTask.resolve)
-				.catch(nextTask.reject);
+			queueMicrotask(() => {
+				const nextTask = this.taskQueue.shift()!;
+
+				this.executeTask(worker, nextTask.args as ThreadArgs<Arguments>)
+					.then(nextTask.resolve)
+					.catch(nextTask.reject);
+			});
+		} else {
+			this.idleWorkerQueue.push(worker);
 		}
 
 		return data;
+	}
+
+	public async terminate(): Promise<void> {
+		await Promise.all(this.threads.map((thread) => thread.terminate()));
 	}
 }

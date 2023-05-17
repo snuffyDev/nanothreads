@@ -4,13 +4,12 @@ import { browser } from "../internals/index.js";
 import { Worker as WorkerImpl } from "../internals/NodeWorker.js";
 import { MessageChannel } from "./channel.js";
 import { Queue } from "../sync/queue.js";
-import { ManualPromise } from "./../utils.js";
 import type { MessagePort as NodeMessagePort } from "node:worker_threads";
 import { PromisePool } from "../sync/promisePool.js";
 
-const TEMPLATE_NODE = `const { parentPort, workerData } = require("worker_threads"); const func = ($1); const f = function (...e){ return new Promise((resolve, reject) => { try { const data = func.apply(func, e); resolve(data) } catch(err) {reject(err)} });}; parentPort.on("message", (e) => {const port = e.port; port.onmessage = async ({ data }) => {const r = await f(...data.data); port.postMessage(r); }; });`;
+const TEMPLATE_NODE = `const{parentPort,workerData}=require("worker_threads"),func=($1),f=function(...e){return new Promise((r,j)=>{try{r(func.apply(func,e))}catch(e){j(e)}})};parentPort.on("message",e=>{const p=e.port;p.onmessage=async({data})=>{p.postMessage(await f(...data.data))}})`;
 
-const TEMPLATE_BROWSER = `const HANDLER=async(...args)=>($1)(...args);const makeMessageHandler=(port)=> ({data})=>{ HANDLER(...data.data).then(r => port.postMessage(r));};onmessage=(e)=>{try{const port=e.ports[0];port.onmessage=makeMessageHandler(port)}catch(err){postMessage({data:null,error:err,status:500})}}`;
+const TEMPLATE_BROWSER = `const H=async(...a)=>($1)(...a),M=p=>({data})=>H(...data.data).then(r=>p.postMessage(r));onmessage=e=>{try{const p=e.ports[0];p.onmessage=M(p)}catch(e){postMessage({data:null,error:e,status:500})}}`;
 
 function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func): string {
 	let func_str = func.toString();
@@ -37,7 +36,10 @@ export abstract class AbstractThread<Args extends [...args: unknown[]] | any, Ou
 	protected abstract channel: MessagePort;
 	protected abstract handle: InstanceType<typeof WorkerImpl>;
 	protected abstract options: IWorkerOptions & { eval?: boolean };
-	protected abstract resolvers: Queue<ManualPromise<Output>>;
+	protected abstract resolvers: Queue<{
+		resolve: (value?: Output | PromiseLike<Output>) => void;
+		reject: (reason?: unknown) => void;
+	}>;
 	protected abstract type: (typeof ThreadType)[keyof typeof ThreadType];
 
 	constructor(
@@ -64,7 +66,10 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 	protected declare channel: MessagePort;
 	protected declare handle: InstanceType<typeof WorkerImpl>;
 	protected options: IWorkerOptions & { eval?: boolean | undefined } = {};
-	protected declare resolvers: Queue<ManualPromise<Output>>;
+	protected declare resolvers: Queue<{
+		resolve: (value?: Output | PromiseLike<Output>) => void;
+		reject: (reason?: unknown) => void;
+	}>;
 	protected declare src: string | WorkerThreadFn<Args, Output>;
 	protected declare type: "inline" | "file" | "inline-blob";
 	private declare pool: PromisePool;
@@ -169,19 +174,19 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 			this.terminate();
 		}
 	};
-
+	protected addTask = (...data: any[]) => {
+		return this.pool.add<Output>(
+			() =>
+				new Promise<Output>((resolve, reject) => {
+					this.resolvers.push({ resolve, reject });
+					this.channel.postMessage({ data });
+				}),
+		);
+	};
 	public send(...data: any[]): Promise<Output> {
-		// console.log("SEND FN - START - " + this.id);
-
-		var promise = new ManualPromise<Output>();
 		this._activeCount++;
-		return this.pool.add<Output>(async () => {
-			this.resolvers.push(promise);
-			// console.log("SEND - ADDING TO POOL - " + this.id);
-			this.channel.postMessage({ data });
-
-			return promise;
-		});
+		const result = this.addTask.call(this, data);
+		return result;
 	}
 
 	public async terminate(): Promise<StatusCode> {

@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.3.4",
+	"version": "0.3.5",
 	"source": "./src/index.ts",
 	"description": "A tiny threading library, made for browsers and Node.",
 	"keywords": [
@@ -33,7 +33,7 @@
 	"module": "./dist/index.mjs",
 	"browser": "./dist/browser/index.js",
 	"scripts": {
-		"build": "node ./build.mjs && pnpm run build:dts",
+		"build": "rm -rf ./dist && node ./build.mjs && pnpm run build:dts",
 		"build:benchmark": "node ./build.mjs && pnpm run build:dts && cp -R ./dist ./browser-test/public/lib/ && cp -R ./dist ./browser-test/src/lib/",
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
 		"build:dts": "tsc --moduleResolution node --target ESNext -m esnext --declaration true --emitDeclarationOnly --rootDir ./src/ --outDir dist",
@@ -44,6 +44,7 @@
 		"format": "prettier --write .",
 		"test": "size-limit"
 	},
+	"sideEffects": false,
 	"exports": {
 		".": {
 			"browser": {
@@ -82,10 +83,12 @@
 			"name": "Web (ESM)",
 			"limit": "2.5 KB",
 			"import": "*",
-			"path": "./dist/browser/index.mjs"
+			"path": "./dist/browser/index.js"
 		}
 	],
 	"devDependencies": {
+		"@size-limit/esbuild": "^8.2.4",
+		"@size-limit/esbuild-why": "^8.2.4",
 		"@size-limit/file": "^8.2.4",
 		"@size-limit/preset-small-lib": "^8.2.4",
 		"@types/node": "^18.15.5",

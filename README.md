@@ -99,10 +99,30 @@ You can find the historical benchmarks [here]().
 Provided below is the results from my own machine (Intel i7-4700MQ, on Arch Linux):
 
 ```
-
+## Throughput test (don't await - just execute)
 nanothreads ([inline] threadpool) x 895,733 ops/sec ±5.75% (68 runs sampled)
 nanothreads ([file] threadpool) x 932,900 ops/sec ±5.10% (69 runs sampled)
 tinypool x 355,282 ops/sec ±21.83% (50 runs sampled)
 threads.js (threadpool) x 1,618 ops/sec ±56.60% (9 runs sampled)
+
+## Complete operations (await the result)
+
+Running "nanothreads inline" suite...
+fasta x 17.85 ops/sec ±2.77% (83 runs sampled)
+Running "nanothreads file" suite...
+"fasta x 18.03 ops/sec ±2.39% (83 runs sampled)"
+Running "tinypool" suite...
+"fasta x 9.23 ops/sec ±1.91% (47 runs sampled)"
+Running "threads.js" suite...
+"fasta x 15.98 ops/sec ±1.59% (76 runs sampled)"
+
+Running "nanothreads inline" suite...
+fasta x 18.34 ops/sec ±2.06% (85 runs sampled)
+Running "nanothreads file" suite...
+"fasta x 18.63 ops/sec ±1.65% (86 runs sampled)"
+Running "tinypool" suite...
+"fasta x 9.60 ops/sec ±2.02% (49 runs sampled)"
+Running "threads.js" suite...
+"fasta x 15.29 ops/sec ±2.22% (73 runs sampled)"
 
 ```

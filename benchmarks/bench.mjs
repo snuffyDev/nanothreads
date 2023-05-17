@@ -1,10 +1,18 @@
 import { Worker } from "worker_threads";
 import v8 from "v8";
 import vm from "vm";
+import { runBenchmark } from "./utils/runner.mjs";
 v8.setFlagsFromString("--expose_gc");
 
 const gc = vm.runInNewContext("gc");
-const FILES = ["./threadsjs.mjs", "./tinypool.mjs", "./nt-file.mjs", "./nt-inline.mjs"].reverse();
+const FILES = ["./threadsjs.mjs", "./tinypool.mjs", "./nt-file.mjs", "./nt-inline.mjs"].reverse().map(
+	async (v) => async () =>
+		await new Promise((resolve) => {
+			runBenchmark(v).finally(() => {
+				setTimeout(resolve, 5000);
+			});
+		}),
+);
 class Defer {
 	resolver = (data = undefined) => {
 		return;
@@ -29,24 +37,17 @@ class Defer {
 		this.resolver(d);
 	}
 }
-const createWorker = async (path) => {
-	const w = new Worker(path, {});
-	const p = new Defer();
-	try {
-		w.on("message", (m) => {
-			if (m === "DRY RUN COMPLETE") return w.postMessage(null);
 
-			w.terminate().then(() => p.resolve(m));
-		});
-		w.postMessage(null);
-		return await p.promise;
-	} finally {
-		gc();
-	}
-};
-for (const path of FILES) {
+gc();
+for await (const bench of FILES) {
 	gc();
-	console.log(await createWorker(path));
+	await bench();
+}
+
+gc();
+for await (const bench of FILES) {
+	gc();
+	await bench();
 }
 
 // for (let idx = 0; idx < 8; idx++) {}

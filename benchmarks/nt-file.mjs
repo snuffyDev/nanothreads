@@ -1,8 +1,10 @@
-import b from "benchmark";
 import { ThreadPool } from "../dist/index.mjs";
 import { parentPort } from "worker_threads";
 import { fileURLToPath } from "url";
-import { CONSTANTS } from "./_util.mjs";
+import { CONSTANTS, queueTasks } from "./_util.mjs";
+import { runAsyncBenchmark } from "./_bm.js";
+import { add, cycle, suite, complete } from "benny";
+import { benchmark } from "./utils/runner.mjs";
 
 const nt = new ThreadPool({
 	task: fileURLToPath(new URL("./workers/nanothreads.mjs", import.meta.url)),
@@ -10,33 +12,15 @@ const nt = new ThreadPool({
 	maxConcurrency: CONSTANTS.max_concurrency,
 });
 
+nt.exec = nt.exec.bind(nt);
+
 const num = CONSTANTS.input;
 
-let count = 0;
-parentPort?.on("message", async () => {
-	if (count === 0) {
-		count += 1;
-		for (const _ of Array(20)) {
-			await nt.exec(num);
-		}
-		await new Promise((r) =>
-			setTimeout(() => {
-				parentPort?.postMessage("DRY RUN COMPLETE");
-				r(null);
-			}, 500),
-		);
-		return;
-	}
-	new b.Suite()
-		.add("nanothreads ([file] threadpool)", async () => await nt.exec(num), { async: true, delay: CONSTANTS.delay })
-		.on("cycle", function (event) {
-			parentPort?.postMessage(String(event.target));
-		})
-		.run({
-			async: true,
-			teardown: async () => {
-				await nt.terminate();
-				// process.kill(process.pid);
-			},
-		});
+const result = await benchmark("nanothreads file")
+	.add("fasta", () => queueTasks(nt.exec, num))
+	.run();
+
+await nt.terminate().then(() => {
+	process.send && process.send(JSON.stringify(result));
+	process.exit(0);
 });

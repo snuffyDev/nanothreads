@@ -18,7 +18,7 @@ const DEFAULT_OPTIONS = {
 	minifyWhitespace: true,
 	minifyIdentifiers: true,
 	treeShaking: true,
-	// drop: ["console", "debugger"],
+	drop: ["console", "debugger"],
 	outdir: "dist",
 	outbase: "src",
 	minifySyntax: true,
@@ -68,6 +68,7 @@ function buildNodeESM() {
 		outExtension: { ".js": ".mjs" },
 		outbase: "src",
 		outdir: "dist",
+		splitting: true,
 		platform: "node",
 		inject: ["./src/internals/NodeWorker-esm.mjs", "./src/threads/channel-esm.mjs"],
 	};
