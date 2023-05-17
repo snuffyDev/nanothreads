@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1681660646416,
+  "lastUpdate": 1684305602439,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -310,6 +310,44 @@ window.BENCHMARK_DATA = {
             "range": "±33.76%",
             "unit": "ops/sec",
             "extra": "12 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "41b5c2177b3e2c34e042ec14d2341f6ac950599d",
+          "message": "minor optimizations",
+          "timestamp": "2023-05-17T02:37:41-04:00",
+          "tree_id": "5bff189ece3139b9e4ecd6042a88d7969cd0397c",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/41b5c2177b3e2c34e042ec14d2341f6ac950599d"
+        },
+        "date": 1684305601134,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "fasta",
+            "value": 6.17,
+            "range": "±6.30%",
+            "unit": "ops/sec",
+            "extra": "34 samples"
+          },
+          {
+            "name": "fasta",
+            "value": 6.98,
+            "range": "±1.99%",
+            "unit": "ops/sec",
+            "extra": "37 samples"
           }
         ]
       }
