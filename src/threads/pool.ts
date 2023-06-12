@@ -110,13 +110,11 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends Abstr
 		const data = await worker.send.call(worker, args as Arguments[]);
 
 		if (this.taskQueue.length > 0) {
-			queueMicrotask(() => {
-				const nextTask = this.taskQueue.shift()!;
+			const nextTask = this.taskQueue.shift()!;
 
-				this.executeTask(worker, nextTask.args as ThreadArgs<Arguments>)
-					.then(nextTask.resolve)
-					.catch(nextTask.reject);
-			});
+			this.executeTask(worker, nextTask.args as ThreadArgs<Arguments>)
+				.then(nextTask.resolve)
+				.catch(nextTask.reject);
 		} else {
 			this.idleWorkerQueue.push(worker);
 		}

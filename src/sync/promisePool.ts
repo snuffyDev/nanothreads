@@ -19,9 +19,6 @@ import { Queue } from ".";
  * 	}
  * ```
  */
-
-type PromiseExecutor<T> = () => Promise<T>;
-
 export class PromisePool {
 	private pendingTasks: Queue<() => Promise<any>> = new Queue();
 	private activeTasks: number = 0;

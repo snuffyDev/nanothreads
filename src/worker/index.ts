@@ -1,1 +1,1 @@
-export { workerInit } from './init.js';
+export { workerInit } from "./init.js";

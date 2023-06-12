@@ -183,10 +183,20 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 				}),
 		);
 	};
+
 	public send(...data: any[]): Promise<Output> {
 		this._activeCount++;
 		const result = this.addTask.call(this, data);
 		return result;
+	}
+
+	public onMessage(callback: (data: Output) => void): () => void {
+		const handleMessage = (message: MessageEvent<Output>) => callback(message.data);
+
+		this.channel.addEventListener("message", handleMessage);
+		return () => {
+			this.channel.removeEventListener("message", handleMessage);
+		};
 	}
 
 	public async terminate(): Promise<StatusCode> {

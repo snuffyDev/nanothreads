@@ -1,12 +1,5 @@
 import { buildSync } from "esbuild";
-import pkg from "./package.json" assert { type: "json" };
 import { rmSync } from "fs";
-import { basename } from "path";
-import { globSync } from "glob";
-const FORMATS = ["esm", "cjs"];
-
-const ROOT_DIR = "./src/";
-const EXTERNAL_PKGS = ["node:worker_threads", "worker_threads", "https"];
 
 /** @type {import('esbuild').BuildOptions} */
 const DEFAULT_OPTIONS = {

@@ -26,23 +26,23 @@ export const workerInit = <Args extends [...args: unknown[]] | any, Output>(
 		...args: Args extends any[] ? Args : [Args]
 	) => void = async function (callback, ...args) {
 		const r = await f(...args);
-		callback(r);
+		callback.call(callback, r);
 	};
 
 	if (browser) {
 		(target as DedicatedWorkerGlobalScope["self"]).onmessage = (e) => {
 			const port = e.ports[0];
-			const callback = (v: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => port.postMessage(v);
+			const postMessage = port.postMessage.bind(port);
 			port.onmessage = ({ data }) => {
-				void drain(callback, ...data.data);
+				drain(postMessage, ...data.data);
 			};
 		};
 	} else if ("on" in target) {
 		target.on("message", function ref(e) {
 			const port = e.port;
-			const callback = (v: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => port.postMessage(v);
+			const postMessage = port.postMessage.bind(port);
 			port.onmessage = ({ data }: { data: { data: Args extends any[] ? Args : [Args] } }) => {
-				void drain(callback, ...data.data);
+				drain(postMessage, ...data.data);
 			};
 			target.off("message", ref);
 		});
