@@ -4,6 +4,17 @@ interface Node<T> {
 	prev: Node<T> | null;
 }
 
+class Node<T> {
+	value: T;
+	next: Node<T> | null = null;
+	prev: Node<T> | null = null;
+	constructor(value: T, next: Node<T> | null, prev: Node<T> | null) {
+		this.value = value;
+		this.next = next;
+		this.prev = prev;
+	}
+}
+
 export class Queue<T> {
 	private head: Node<T> | null;
 	private tail: Node<T> | null;
@@ -19,7 +30,7 @@ export class Queue<T> {
 	}
 
 	push(value: T) {
-		var newNode = { value, prev: this.tail, next: null } as Node<T>;
+		var newNode = new Node(value, null, this.tail);
 		if (!this.head) {
 			this.head = newNode;
 			this.tail = newNode;
@@ -36,7 +47,7 @@ export class Queue<T> {
 	}
 
 	unshift(value: T) {
-		var newNode = { value, prev: null, next: this.head } as Node<T>;
+		var newNode = new Node(value, this.head, null);
 
 		if (!this.head) {
 			this.head = newNode;

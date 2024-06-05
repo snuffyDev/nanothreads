@@ -42,18 +42,17 @@ export class PromisePool {
 		}
 	}
 
-	async add<T>(task: () => Promise<T>): Promise<T> {
-		return new Promise<T>((resolve, reject) => {
-			const wrappedTask = async () => {
-				try {
-					const result = await task();
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			};
-
-			this.pendingTasks.push(wrappedTask);
+	/**
+	 * Adds a task to the pool.
+	 * @param task The task to add to the pool.
+	 */
+	add<T>(task: () => Promise<T>): Promise<T> {
+		return new Promise((resolve, reject) => {
+			this.pendingTasks.push(() =>
+				task()
+					.then((result) => resolve(result))
+					.catch((error) => reject(error)),
+			);
 			this.runNext();
 		});
 	}

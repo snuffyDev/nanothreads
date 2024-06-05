@@ -40,7 +40,7 @@ export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any>, Outp
 }
 
 type TaskQueueItem<Arguments> = {
-	args: Arguments[];
+	args: Arguments;
 	resolve: (value: any) => void;
 	reject: (reason?: any) => void;
 };
@@ -60,7 +60,7 @@ type TaskQueueItem<Arguments> = {
  */
 export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends AbstractThreadPool<Arguments, Output> {
 	protected declare readonly count: number;
-	private readonly taskQueue: Queue<TaskQueueItem<Arguments>>;
+	private readonly taskQueue: Queue<TaskQueueItem<ThreadArgs<Arguments>>>;
 
 	private idleWorkerQueue: Queue<AnyThread<Arguments, Output>>;
 	constructor(params: ThreadPoolParams<Arguments, Output>) {
@@ -86,7 +86,7 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends Abstr
 		}
 	}
 
-	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
+	public exec(...args: Arguments extends ThreadArgs<any[]> ? Arguments : [Arguments]): Promise<Output> {
 		const worker = this.getWorker();
 		if (!worker) {
 			return new Promise<Output>((resolve, reject) => {
