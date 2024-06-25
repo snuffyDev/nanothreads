@@ -12,7 +12,6 @@ const nt = new ThreadPool({
 	maxConcurrency: CONSTANTS.max_concurrency,
 });
 
-nt.exec = nt.exec.bind(nt);
 
 const num = CONSTANTS.input;
 

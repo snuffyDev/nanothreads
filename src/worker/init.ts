@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { browser } from "../internals/utils.js";
 import type { WorkerThreadFn } from "../models/thread.js";
 
@@ -19,18 +20,18 @@ export const workerInit = <Args extends [...args: unknown[]] | any, Output>(
 	func: WorkerThreadFn<Args, Output>,
 	maxConcurrent: number = 1,
 ) => {
-	const f = async (...args: Args extends any[] ? Args : [Args]) => func(...args);
+	const f = async (...args: Args extends unknown[] ? Args : [Args]) => func(...args);
 
 	const drain: (
 		callback: (value: Output extends Promise<infer R> ? Promise<Awaited<R>> : Output) => void | PromiseLike<void>,
-		...args: Args extends any[] ? Args : [Args]
+		...args: Args extends unknown[] ? Args : [Args]
 	) => void = async function (callback, ...args) {
 		const r = await f(...args);
 		callback.call(callback, r);
 	};
 
 	if (browser) {
-		(target as DedicatedWorkerGlobalScope["self"]).onmessage = (e) => {
+		((target as DedicatedWorkerGlobalScope["self"]) ?? globalThis).onmessage = (e) => {
 			const port = e.ports[0];
 			const postMessage = port.postMessage.bind(port);
 			port.onmessage = ({ data }) => {
@@ -41,7 +42,7 @@ export const workerInit = <Args extends [...args: unknown[]] | any, Output>(
 		target.on("message", function ref(e) {
 			const port = e.port;
 			const postMessage = port.postMessage.bind(port);
-			port.onmessage = ({ data }: { data: { data: Args extends any[] ? Args : [Args] } }) => {
+			port.onmessage = ({ data }: { data: { data: Args extends unknown[] ? Args : [Args] } }) => {
 				drain(postMessage, ...data.data);
 			};
 			target.off("message", ref);

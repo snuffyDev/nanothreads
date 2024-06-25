@@ -1,5 +1,5 @@
 import { buildSync } from "esbuild";
-import { rmSync } from "fs";
+import { readdirSync, rmSync } from "fs";
 
 /** @type {import('esbuild').BuildOptions} */
 const DEFAULT_OPTIONS = {
@@ -29,6 +29,7 @@ function buildWeb() {
 		format: "esm",
 		platform: "browser",
 		outbase: "src",
+		external: ["worker_threads"],
 		outdir: "dist/browser",
 	};
 

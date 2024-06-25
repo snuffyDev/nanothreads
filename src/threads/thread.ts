@@ -1,11 +1,13 @@
 import { StatusCode } from "../models/index.js";
-import type { IThread as IThread, WorkerThreadFn } from "../models/thread.js";
+import type { IThread as IThread, ThreadConstructor, WorkerThreadFn } from "../models/thread.js";
 import { browser } from "../internals/index.js";
 import { Worker as WorkerImpl } from "../internals/NodeWorker.js";
 import { MessageChannel } from "./channel.js";
 import { Queue } from "../sync/queue.js";
 import type { MessagePort as NodeMessagePort } from "node:worker_threads";
 import { PromisePool } from "../sync/promisePool.js";
+import { isMarkedTransferable, isTransferable } from "./transferable.js";
+import type { ThreadArgs } from "./pool.js";
 
 const TEMPLATE_NODE = `const{parentPort,workerData}=require("worker_threads"),func=($1),f=function(...e){return new Promise((r,j)=>{try{r(func.apply(func,e))}catch(e){j(e)}})};parentPort.on("message",e=>{const p=e.port;p.onmessage=async({data})=>{p.postMessage(await f(...data.data))}})`;
 
@@ -13,10 +15,7 @@ const TEMPLATE_BROWSER = `const H=async(...a)=>($1)(...a),M=p=>({data})=>H(...da
 
 function funcToString<Func extends (...args: unknown[]) => unknown>(func: Func): string {
 	let func_str = func.toString();
-	if (browser) {
-		return TEMPLATE_BROWSER.replace("$1", func_str);
-	}
-	return TEMPLATE_NODE.replace("$1", func_str);
+	return (browser ? TEMPLATE_BROWSER : TEMPLATE_NODE).replace("$1", func_str);
 }
 
 /** @internal creates a new worker thread  */
@@ -32,7 +31,7 @@ const ThreadType = {
 	File: "file",
 } as const;
 
-export abstract class AbstractThread<Args extends [...args: unknown[]] | any, Output> implements IThread<Args, Output> {
+export abstract class AbstractThread<Args extends any[], Output> implements IThread<Args, Output> {
 	protected abstract channel: MessagePort;
 	protected abstract handle: InstanceType<typeof WorkerImpl>;
 	protected abstract options: IWorkerOptions & { eval?: boolean };
@@ -43,12 +42,37 @@ export abstract class AbstractThread<Args extends [...args: unknown[]] | any, Ou
 	protected abstract type: (typeof ThreadType)[keyof typeof ThreadType];
 
 	constructor(
-		protected src: WorkerThreadFn<Args, Output> | string,
-		protected config?: { once?: boolean; type?: "module" | undefined; id?: number },
-	) {}
+		src: URL | string,
+		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
+	);
+	constructor(
+		src: string | URL,
+		options: {
+			type?: "module" | undefined;
+			once?: boolean | undefined;
+			id?: number | undefined;
+			maxConcurrency?: number | undefined;
+		},
+	);
+	constructor(
+		src: WorkerThreadFn<Args, Output>,
+		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
+	);
+	constructor(protected src: any, protected config: any) {
+		this.config = config;
+	}
 
-	public abstract send(...data: Args extends any[] ? Args : [Args]): Promise<Output>;
 	public abstract terminate(): Promise<StatusCode>;
+	public abstract send(...data: Args extends any[] ? Args : Args[]): Promise<Output>;
+
+	public onMessage(callback: (data: Output) => void): () => void {
+		const handleMessage = (message: MessageEvent<Output>) => callback(message.data);
+
+		this.channel.addEventListener("message", handleMessage);
+		return () => {
+			this.channel.removeEventListener("message", handleMessage);
+		};
+	}
 }
 
 /**
@@ -60,7 +84,7 @@ export abstract class AbstractThread<Args extends [...args: unknown[]] | any, Ou
  * const thread = new ThreadImpl<string, string>(...)
  *
  */
-export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
+export class ThreadImpl<Args extends any[], Output> extends AbstractThread<Args, Output> {
 	private _activeCount = 0;
 
 	protected declare channel: MessagePort;
@@ -73,15 +97,23 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 	protected declare src: string | WorkerThreadFn<Args, Output>;
 	protected declare type: "inline" | "file" | "inline-blob";
 	private declare pool: PromisePool;
+	protected taskFactory: (...data: Args extends any[] ? Args : [...args: Args[]]) => Promise<Output>;
 
 	constructor(
-		src: WorkerThreadFn<Args, Output> | string,
-		protected config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number } = {
-			once: true,
-			id: 0,
-			type: undefined,
-			maxConcurrency: null,
-		},
+		src: URL | string,
+		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
+	);
+	constructor(
+		src: (...args: any[]) => Output,
+		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
+	);
+	constructor(
+		src: WorkerThreadFn<Args, Output>,
+		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
+	);
+	constructor(
+		src: any,
+		protected config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
 	) {
 		super(src, config);
 
@@ -113,6 +145,8 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 				throw new TypeError("Invalid source. Expected type 'function' or 'string', received " + typeof src);
 			}
 		}
+
+		this.taskFactory = this.createTaskFactory();
 
 		if (this.config.type !== undefined) {
 			this.options.type = this.config.type;
@@ -174,20 +208,34 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
 			this.terminate();
 		}
 	};
-	protected addTask = (...data: any[]) => {
-		return this.pool.add<Output>(
-			() =>
-				new Promise<Output>((resolve, reject) => {
-					this.resolvers.push({ resolve, reject });
-					this.channel.postMessage({ data });
-				}),
-		);
+
+	protected createTaskFactory = () => {
+		return (...data: Args extends any[] ? Args : [...args: Args[]]) => {
+			return new Promise<Output>((resolve, reject) => {
+				this.resolvers.push({ resolve, reject });
+				const { payload, transferables } = this.preparePayload(data);
+				this.channel.postMessage({ data: payload }, transferables);
+			});
+		};
 	};
 
-	public send(...data: any[]): Promise<Output> {
+	private preparePayload(data: Args extends any[] ? Args : [...args: Args[]]) {
+		const payload: any[] = [];
+		const transferables: any[] = [];
+		for (const d of data) {
+			if (isMarkedTransferable(d)) {
+				transferables.push(d.value);
+				payload.push(d.value);
+			} else {
+				payload.push(d);
+			}
+		}
+		return { payload, transferables };
+	}
+
+	public send(...data: Args extends any[] ? Args : [...args: Args[]]): Promise<Output> {
 		this._activeCount++;
-		const result = this.addTask.call(this, data);
-		return result;
+		return this.pool.add<Output>(() => this.taskFactory.apply(this, data));
 	}
 
 	public onMessage(callback: (data: Output) => void): () => void {
@@ -211,14 +259,14 @@ export class ThreadImpl<Args, Output> extends AbstractThread<Args, Output> {
  * Creates a new thread using a specified script
  * @example
  * ```ts
- * import { Thread } from 'nanothreads.js.js';
+ * import { Thread } from 'nanothreads';
  *
  * const handle = new Thread<[number, number], number>('./worker.js');
  * await handle.send(4, 1); // output: 5
  *
  * ```
  */
-export class Thread<Args, Output> extends ThreadImpl<Args, Output> {
+export class Thread<Args extends any[], Output> extends ThreadImpl<Args, Output> {
 	constructor(
 		src: string | URL,
 		options: { type?: "module" | undefined; once?: boolean; id?: number; maxConcurrency?: number },
@@ -231,13 +279,13 @@ export class Thread<Args, Output> extends ThreadImpl<Args, Output> {
  * Creates a new thread using an inline function.
  * @example
  * ```ts
- * import { InlineThread } from 'nanothreads.js.js';
+ * import { InlineThread } from 'nanothreads';
  *
  * const handle = new InlineThread<[number, number], number>((a, b) => a + b);
  * await handle.send(4, 1); // output: 5
  * ```
  */
-export class InlineThread<Args, Output> extends ThreadImpl<Args, Output> {
+export class InlineThread<Args extends any[], Output> extends ThreadImpl<Args, Output> {
 	constructor(
 		src: WorkerThreadFn<Args, Output>,
 		options: { once?: boolean; type?: "module" | undefined; id?: number; maxConcurrency?: number },

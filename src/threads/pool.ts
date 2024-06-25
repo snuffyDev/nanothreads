@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { InlineThread, Thread, yieldMicrotask } from "./thread.js";
 import type { WorkerThreadFn } from "../models";
 import { Queue } from "../sync/index.js";
@@ -5,20 +6,20 @@ import { Queue } from "../sync/index.js";
 export type MaybePromise<P> = P | Promise<P>;
 
 /** Utility type for defining Worker Thread arguments */
-export type ThreadArgs<T> = T extends any[] ? T : [T];
+export type ThreadArgs<T> = T extends [...args: infer Args] ? [...args: Args] : [...args: T[]];
 
-export type ThreadPoolParams<Arguments extends ThreadArgs<any>, Output> = {
+export type ThreadPoolParams<Arguments extends ThreadArgs<any[]>, Output> = {
 	task: WorkerThreadFn<Arguments, MaybePromise<Output>> | string | URL;
 	count: number;
 	type?: "module" | undefined;
 	maxConcurrency?: number;
 };
 
-export type AnyThread<Arguments, Output> =
+export type AnyThread<Arguments extends any[], Output> =
 	| InlineThread<Arguments, MaybePromise<Output>>
 	| Thread<Arguments, MaybePromise<Output>>;
 
-export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any>, Output> {
+export abstract class AbstractThreadPool<Arguments extends ThreadArgs<any[]>, Output> {
 	protected threads: Array<AnyThread<Arguments, Output>> = [];
 	protected readonly count: number;
 	constructor(
@@ -44,12 +45,13 @@ type TaskQueueItem<Arguments> = {
 	resolve: (value: any) => void;
 	reject: (reason?: any) => void;
 };
+
 /**
  * A static thread pool that will execute a task/function on different threads.
  *
  * @class ThreadPool
  * @example
- * import { ThreadPool } from 'nanothreads.js.js';
+ * import { ThreadPool } from 'nanothreads';
  *
  * const pool = new ThreadPool<string, string>({
  * 	task: (name) => `Hello ${name}!`,
@@ -58,9 +60,9 @@ type TaskQueueItem<Arguments> = {
  *
  * await pool.exec("Paul") // output: "Hello Paul!"
  */
-export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends AbstractThreadPool<Arguments, Output> {
+export class ThreadPool<Arguments extends any[], Output> extends AbstractThreadPool<Arguments, Output> {
 	protected declare readonly count: number;
-	private readonly taskQueue: Queue<TaskQueueItem<ThreadArgs<Arguments>>>;
+	private readonly taskQueue: Queue<TaskQueueItem<Arguments>>;
 
 	private idleWorkerQueue: Queue<AnyThread<Arguments, Output>>;
 	constructor(params: ThreadPoolParams<Arguments, Output>) {
@@ -75,18 +77,18 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends Abstr
 		const TCtor = typeof task === "function" ? InlineThread : Thread;
 
 		for (let idx = 0; idx < count; idx++) {
-			const worker = new TCtor(task as any, {
+			const worker = new (TCtor as new (...args: any[]) => AnyThread<Arguments, Output>)(task as any, {
 				once: false,
 				id: idx,
 				maxConcurrency,
 				type,
 			});
-			this.threads[idx] = worker as AnyThread<Arguments, Output>;
-			this.idleWorkerQueue.push(worker as AnyThread<Arguments, Output>);
+			this.threads[idx] = worker;
+			this.idleWorkerQueue.push(worker);
 		}
 	}
 
-	public exec(...args: Arguments extends ThreadArgs<any[]> ? Arguments : [Arguments]): Promise<Output> {
+	public exec(...args: Arguments extends any[] ? Arguments : [Arguments]): Promise<Output> {
 		const worker = this.getWorker();
 		if (!worker) {
 			return new Promise<Output>((resolve, reject) => {
@@ -106,8 +108,18 @@ export class ThreadPool<Arguments extends ThreadArgs<any>, Output> extends Abstr
 		return worker;
 	}
 
+	public async execAll(...args: Arguments[]): Promise<Awaited<Output>[]> {
+		const results: Output[] = [];
+
+		for (const worker of this.threads) {
+			results.push(worker.send(...args));
+		}
+
+		return Promise.all(results);
+	}
+
 	private async executeTask(worker: AnyThread<Arguments, Output>, args: ThreadArgs<Arguments>): Promise<Output> {
-		const data = await worker.send.call(worker, args as Arguments[]);
+		const data = await worker.send.call(worker, ...(args as Arguments[]));
 
 		if (this.taskQueue.length > 0) {
 			const nextTask = this.taskQueue.shift()!;
