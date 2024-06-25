@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717555362336,
+  "lastUpdate": 1719281599377,
   "repoUrl": "https://github.com/snuffyDev/nanothreads",
   "entries": {
     "Threadpool Benchmark": [
@@ -424,6 +424,37 @@ window.BENCHMARK_DATA = {
             "range": "±1.23%",
             "unit": "ops/sec",
             "extra": "79 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "committer": {
+            "email": "72365477+snuffyDev@users.noreply.github.com",
+            "name": "snuffy",
+            "username": "snuffyDev"
+          },
+          "distinct": true,
+          "id": "dd4aceb4c124aa48d5e99cca5da5da326987e7d0",
+          "message": "[0.3.9] Fix some import issues, add transferables",
+          "timestamp": "2024-06-24T22:12:37-04:00",
+          "tree_id": "51720ca9e598476ad117cd218db53998f1d8238b",
+          "url": "https://github.com/snuffyDev/nanothreads/commit/dd4aceb4c124aa48d5e99cca5da5da326987e7d0"
+        },
+        "date": 1719281598859,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "fasta",
+            "value": 16.51,
+            "range": "±1.51%",
+            "unit": "ops/sec",
+            "extra": "78 samples"
           }
         ]
       }
