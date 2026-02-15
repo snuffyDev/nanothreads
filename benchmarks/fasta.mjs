@@ -1,4 +1,8 @@
-export default (num = 2500000) => {
+/**
+ * @param {number} num
+ */
+export default async (num) => {
+	if (!num) num = 2500000
 	var last = 42,
 		A = 3877,
 		C = 29573,

@@ -1,0 +1,17 @@
+{
+	"extends": "../tsconfig.json",
+	"include": ["./**/*.ts"],
+	"exclude": ["./**/*.test.ts"],
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "es2022",
+		"moduleResolution": "esnext",
+
+		"lib": ["ES2022", "DOM"],
+		"strict": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"outDir": "./dist",
+
+	}
+}

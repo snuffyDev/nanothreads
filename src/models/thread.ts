@@ -1,4 +1,4 @@
-import type { MaybePromise, ThreadArgs } from "../threads/pool.js";
+import type { ThreadArgs } from "../threads/ThreadPool";
 import type { StatusCode } from "./statuses.js";
 
 export type GetReturnType<T> = T extends (...args: any[]) => ReturnType<infer Value> ? ReturnType<Value> : T;
@@ -13,7 +13,7 @@ export interface IThreadOptions {
 	once?: boolean;
 }
 
-export interface IThread<Args extends ThreadArgs<unknown>, Output> {
+export interface IThread<Args extends ThreadArgs<any[]>, Output> {
 	/**
 	 * Executes the thread function and returns the result.
 	 *
@@ -33,7 +33,9 @@ export interface ThreadConstructor<Args extends ThreadArgs<any[]>, Output> {
 	constructor<F extends (...args: [unknown] | any[]) => Output>(
 		src: F,
 		options: { type?: "module" | undefined; once?: boolean; id?: number; maxConcurrency?: number },
-	): IThread<Parameters<F>, GetReturnType<F>>;
+	): F extends (...args: any[]) => Promise<infer R>
+		? IThread<Parameters<F>, R>
+		: IThread<Parameters<F>, GetReturnType<F>>;
 
 	constructor(
 		src: URL | string,

@@ -1,32 +1,50 @@
-import b from "benchmark";
 import { Pool, spawn, Worker } from "threads";
-import { parentPort } from "worker_threads";
 import { CONSTANTS, queueTasks } from "./_util.mjs";
-import { runAsyncBenchmark } from "./_bm.js";
 import { benchmark } from "./utils/runner.mjs";
+import { INPUT_SIZES } from "./_config.mjs";
 
-const spawnW = async () => {
-	return await spawn(new Worker("./workers/threads-js.js", { type: "module" }));
+/** @type {Record<keyof typeof INPUT_SIZES, string>} */
+const workerFiles = {
+    fasta: "./workers/threads-js.js",
+    secp256k: "./workers/threads-js-secp256k.js",
+    pi: "./workers/threads-js-pi.js",
 };
-const pool = Pool(spawnW, CONSTANTS.thread_count);
 
-pool.queue = pool.queue.bind(pool);
-const num = CONSTANTS.input;
+/** @type {(keyof typeof INPUT_SIZES)[]} */
+const workloads = ["fasta", "secp256k", "pi"];
 
-let count = 0;
+/** @type {Array<unknown>} */
+const results = [];
 
-const results = await benchmark("threads.js")
-	.add("fasta", () =>
-		queueTasks(
-			async () =>
-				await pool.queue(async (cb) => {
-					return await cb(num);
-				}),
-		),
-	)
-	.run();
+async function run() {
+    for (const workload of workloads) {
+        await runWorkload(workload);
+    }
 
-await pool.terminate().then(() => {
-	process.send && process.send(JSON.stringify(results));
-	process.exit(0);
-});
+    /** @param {keyof typeof INPUT_SIZES} workload */
+    async function runWorkload(workload) {
+        const NUM = INPUT_SIZES[workload];
+        const spawnWorker = async () => spawn(new Worker(workerFiles[workload], { type: "module" }));
+        const pool = Pool(spawnWorker, CONSTANTS.thread_count);
+        pool.queue = pool.queue.bind(pool);
+        try {
+            const summary = await benchmark(`threads.js-pool:${workload}`)
+                .add(workload, () => queueTasks(() =>
+									// @ts-ignore-next-line
+									pool.queue(async (workerFn) => workerFn(NUM))
+								))
+                .run();
+
+            results.push(summary);
+        } finally {
+            await pool.terminate();
+        }
+    }
+
+    if (process.send) {
+        process.send(JSON.stringify(results));
+    }
+    process.exit(0);
+}
+
+await run();

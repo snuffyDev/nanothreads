@@ -32,3 +32,4 @@ NodeWorker-cjs.ts
 NodeWorker-esm.mts
 BACKUP.old
 browser-test/*
+benchmarks/build

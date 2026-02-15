@@ -1,103 +1,94 @@
-interface Node<T> {
-	value: T;
-	next: Node<T> | null;
-	prev: Node<T> | null;
-}
-
-class Node<T> {
+/**
+ * `Node` is a container for the value of an item inside of a `Queue`
+ */
+export class Node<T> {
 	value: T;
 	next: Node<T> | null = null;
-	prev: Node<T> | null = null;
-	constructor(value: T, next: Node<T> | null, prev: Node<T> | null) {
+	constructor(value: T, next: Node<T> | null) {
 		this.value = value;
 		this.next = next;
-		this.prev = prev;
 	}
 }
 
+type QueueHeader<T> = {
+	length: number;
+	head: Node<T> | null;
+	tail: Node<T> | null;
+};
+
 export class Queue<T> {
-	private head: Node<T> | null;
-	private tail: Node<T> | null;
-	private _length: number;
+	private header: QueueHeader<T>;
 
 	constructor() {
-		this.head = null;
-		this.tail = null;
-		this._length = 0;
+		this.header = { length: 0, head: null, tail: null };
 	}
+
 	public get length() {
-		return this._length;
+		return this.header.length;
 	}
 
 	push(value: T) {
-		var newNode = new Node(value, null, this.tail);
-		if (!this.head) {
-			this.head = newNode;
-			this.tail = newNode;
-			newNode.next = newNode;
-			newNode.prev = newNode;
+		const newNode = new Node(value, null);
+		if (!this.header.tail) {
+			this.header.head = newNode;
+			this.header.tail = newNode;
 		} else {
-			newNode.prev = this.tail!;
-			newNode.next = this.head;
-			this.tail!.next = newNode!;
-			this.head.prev = newNode;
-			this.tail = newNode;
+			this.header.tail.next = newNode;
+			this.header.tail = newNode;
 		}
-		this._length++;
+		this.header.length++;
 	}
 
 	unshift(value: T) {
-		var newNode = new Node(value, this.head, null);
-
-		if (!this.head) {
-			this.head = newNode;
-			this.tail = newNode;
-			newNode.next = newNode;
-			newNode.prev = newNode;
-		} else {
-			newNode.next = this.head;
-			newNode.prev = this.tail!;
-			this.head.prev = newNode;
-			this.tail!.next = newNode;
-			this.head = newNode;
+		const newNode = new Node(value, this.header.head);
+		this.header.head = newNode;
+		if (!this.header.tail) {
+			this.header.tail = newNode;
 		}
-		this._length++;
+		this.header.length++;
 	}
 
 	pop() {
-		const tail = this.tail;
-		if (!this.head) {
-			return;
-		} else if (tail === this.tail) {
-			this.head = null;
-			this.tail = null;
-		} else {
-			this.tail = this.tail!.prev;
-			this.tail!.next = this.head;
-			this.head!.prev = this.tail;
+		const head = this.header.head;
+		const tail = this.header.tail;
+		if (!head || !tail) {
+			return undefined;
 		}
-		this._length--;
-		return tail!.value;
+
+		if (head === tail) {
+			this.header.head = null;
+			this.header.tail = null;
+			this.header.length--;
+			return tail.value;
+		}
+
+		let current = head;
+		while (current.next !== tail) {
+			current = current.next!;
+		}
+
+		this.header.tail = current;
+		this.header.tail.next = null;
+		this.header.length--;
+		return tail.value;
 	}
 
 	shift() {
-		const head = this.head;
-		if (!this.head) {
-			return;
-		} else if (this.head === this.tail) {
-			this.head = null;
-			this.tail = null;
-		} else {
-			this.head = this.head.next;
-			this.head!.prev = this.tail!;
-			this.tail!.next = this.head!;
+		const head = this.header.head;
+		if (!head) {
+			return undefined;
 		}
-		this._length--;
-		return head!.value;
+
+		this.header.head = head.next;
+		if (!this.header.head) {
+			this.header.tail = null;
+		}
+		this.header.length--;
+		return head.value;
 	}
 
-	[Symbol.iterator]() {
-		let currentNode = this.head;
+	[Symbol.iterator] = () => {
+		let currentNode = this.header.head;
 
 		return {
 			next: () => {
@@ -111,5 +102,5 @@ export class Queue<T> {
 				return { done: false, value };
 			},
 		};
-	}
+	};
 }

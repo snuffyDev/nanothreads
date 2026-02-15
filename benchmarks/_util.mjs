@@ -1,15 +1,20 @@
-import fasta from "./fasta.mjs";
-import pi from "./pi.mjs";
+import { INPUT_SIZES } from "./_config.mjs";
 
-export const CONSTANTS = Object.freeze({
+export const CONSTANTS = {
 	thread_count: 4,
-	input: 25000,
-	func: fasta,
 	delay: 0.05,
 	max_concurrency: 5,
-	run_count: 20,
-});
+	run_count: 25,
+};
 
+/**
+ * Queue a fixed number of async tasks using the provided spawn function.
+ * The spawn function should return a Promise for each invocation.
+ *
+ * @param {(...args: any[]) => Promise<unknown>} spawnFn
+ * @param {...any} args
+ * @returns {Promise<unknown[]>}
+ */
 export const queueTasks = async (spawnFn, ...args) => {
 	const results = [];
 	for (let idx = 0; idx < CONSTANTS.run_count; idx++) {
@@ -18,3 +23,4 @@ export const queueTasks = async (spawnFn, ...args) => {
 	const data = await Promise.all(results);
 	return data;
 };
+

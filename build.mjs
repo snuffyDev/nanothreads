@@ -1,3 +1,4 @@
+import { execSync } from "child_process";
 import { buildSync } from "esbuild";
 import { readdirSync, rmSync } from "fs";
 
@@ -7,12 +8,15 @@ const DEFAULT_OPTIONS = {
 	bundle: true,
 	entryPoints: ["./src/index.ts", "./src/worker/index.ts"],
 	packages: "external",
-	keepNames: true,
+	keepNames: false,
+
 	minifyWhitespace: true,
 	minifyIdentifiers: true,
 	treeShaking: true,
 	drop: ["console", "debugger"],
+
 	outdir: "dist",
+
 	outbase: "src",
 	minifySyntax: true,
 	minify: true,
@@ -20,7 +24,7 @@ const DEFAULT_OPTIONS = {
 
 try {
 	rmSync("./dist", { recursive: true });
-} catch {}
+} catch { }
 function buildWeb() {
 	/** @type {import('esbuild').BuildOptions} */
 	const OPTS = {
@@ -45,9 +49,11 @@ function buildNodeCJS() {
 		outExtension: { ".js": ".cjs" },
 		platform: "node",
 		outbase: "src",
+
 		outdir: "dist",
 		inject: ["./src/internals/NodeWorker-cjs.js", "./src/threads/channel-cjs.js"],
 		tsconfig: "./tsconfig.node.json",
+	drop: [],
 	};
 
 	const o = Object.assign({}, DEFAULT_OPTIONS, OPTS);
@@ -62,8 +68,8 @@ function buildNodeESM() {
 		outExtension: { ".js": ".mjs" },
 		outbase: "src",
 		outdir: "dist",
-		splitting: true,
 		platform: "node",
+		bundle: true,
 		inject: ["./src/internals/NodeWorker-esm.mjs", "./src/threads/channel-esm.mjs"],
 	};
 
@@ -72,3 +78,5 @@ function buildNodeESM() {
 }
 
 [buildNodeESM, buildNodeCJS, buildWeb].forEach((f) => f());
+
+execSync("pnpm run build:dts");

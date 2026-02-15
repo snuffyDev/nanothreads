@@ -1,4 +1,4 @@
-#!
+// @ts-nocheck
 // import { forEach } from './../src/collections/array/forEach';
 // import { forEach } from './../src/collections/array/forEach';
 import * as fs from "fs";

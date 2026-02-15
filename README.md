@@ -2,7 +2,7 @@
 
 A super-fast, super-powerful Worker-based multi-threading library for the browser and Node.js.
 
-Nanothreads is only ~2 KB for browsers, ~2.3 KB for Node.js, making it a _super_ tiny alternative to
+Nanothreads is only ~3.2 KB for browsers, ~3.5 KB for Node.js, making it a _super_ tiny alternative to
 [tinypool](https://github.com/tinylibs/tinypool), [threads.js](https://github.com/andywer/threads.js) and others!
 
 **[\[Benchmarks\]](https://snuffydev.github.io/nanothreads/dev/bench/index.html)** |
@@ -32,14 +32,8 @@ yarn add nanothreads
 #### Importing
 
 ```ts
-// Browsers
-import { ThreadPool } from "nanothreads/browser";
-
-// Node.js
 import { ThreadPool } from "nanothreads";
 ```
-
-> Note: Browsers must specify the import path as `nanothreads/browser`.
 
 #### Kitchen Sink
 
@@ -86,6 +80,48 @@ await inline_thread.terminate();
 await pool.terminate();
 ```
 
+#### DynamicThreadPool (auto-scaling)
+
+If you want a pool that automatically grows and shrinks based on load, use `DynamicThreadPool`.
+It scales the number of workers between `minThreads` and `maxThreads` and runs up to
+`maxConcurrency` tasks per worker.
+
+```ts
+import { DynamicThreadPool } from "nanothreads";
+
+type Args = [jobId: number, payload: string];
+
+const pool = new DynamicThreadPool<Args, string>({
+	// Can be a function (inline workers) or a worker script/module (file workers)
+	task: async (jobId, payload) => {
+		// ...do work...
+		return `done:${jobId}`;
+	},
+	minThreads: 1,
+	maxThreads: 8,
+	maxConcurrency: 4,
+	idleTimeout: 12_000,
+});
+
+pool.on("scaledown", (size) => {
+	console.log("Pool scaled down to", size);
+});
+
+pool.on("scaleup", (size) => {
+	console.log("Pool scaled up to", size);
+});
+
+pool.on("drained", () => {
+	console.log("Pool is fully drained");
+});
+
+
+const res = await pool.exec(1, "payload");
+console.log(res);
+
+await pool.terminate();
+```
+
 ### Documentation
 
 API Documentation can be found here:
@@ -94,35 +130,4 @@ directory on GitHub.
 
 ### Benchmarks
 
-You can find the historical benchmarks [here]().
-
-Provided below is the results from my own machine (Intel i7-4700MQ, on Arch Linux):
-
-```
-## Throughput test (don't await - just execute)
-nanothreads ([inline] threadpool) x 895,733 ops/sec ±5.75% (68 runs sampled)
-nanothreads ([file] threadpool) x 932,900 ops/sec ±5.10% (69 runs sampled)
-tinypool x 355,282 ops/sec ±21.83% (50 runs sampled)
-threads.js (threadpool) x 1,618 ops/sec ±56.60% (9 runs sampled)
-
-## Complete operations (await the result)
-
-Running "nanothreads inline" suite...
-fasta x 17.85 ops/sec ±2.77% (83 runs sampled)
-Running "nanothreads file" suite...
-"fasta x 18.03 ops/sec ±2.39% (83 runs sampled)"
-Running "tinypool" suite...
-"fasta x 9.23 ops/sec ±1.91% (47 runs sampled)"
-Running "threads.js" suite...
-"fasta x 15.98 ops/sec ±1.59% (76 runs sampled)"
-
-Running "nanothreads inline" suite...
-fasta x 18.34 ops/sec ±2.06% (85 runs sampled)
-Running "nanothreads file" suite...
-"fasta x 18.63 ops/sec ±1.65% (86 runs sampled)"
-Running "tinypool" suite...
-"fasta x 9.60 ops/sec ±2.02% (49 runs sampled)"
-Running "threads.js" suite...
-"fasta x 15.29 ops/sec ±2.22% (73 runs sampled)"
-
-```
+You can find the historical benchmarks [here](https://snuffydev.github.io/nanothreads/dev/bench/index.html).

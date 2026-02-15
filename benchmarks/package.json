@@ -2,23 +2,25 @@
 	"name": "benchmarks",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
 	"type": "module",
+	"private": "true",
 	"scripts": {
-		"run:threadpool": "cd .. && npm run build && cd ./benchmarks/ && node ./bench.mjs"
+		"run:threadpool": "node ./build/bench.mjs -- --record",
+		"bench:pPoolChanges": "node ./bench_promisePools.mjs"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@types/benchmark": "^2.1.2",
-		"@types/vscode": "^1.75.0",
+		"@types/benchmark": "^2.1.5",
+		"@types/vscode": "^1.109.0",
 		"benchmark": "^2.1.4",
 		"benny": "^3.7.1",
-		"poolifier": "^2.3.7",
+		"poolifier": "^2.7.5",
 		"tinypool": "^0.3.1"
 	},
 	"dependencies": {
+		"nanothreads": "workspace:*",
 		"threads": "^1.7.0"
 	}
 }

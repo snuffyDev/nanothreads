@@ -1,4 +1,7 @@
-export default (n) => {
+/**
+ * @param {number} n
+ */
+export default async (n) => {
 	// Int32
 	n = +n || 10000;
 	let i = 0,

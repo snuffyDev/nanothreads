@@ -1,21 +1,50 @@
-import b from "benchmark";
 import { Tinypool } from "tinypool";
-import { parentPort } from "worker_threads";
 import { CONSTANTS, queueTasks } from "./_util.mjs";
-import { runAsyncBenchmark } from "./_bm.js";
 import { benchmark } from "./utils/runner.mjs";
-const tppool = new Tinypool({
-	filename: new URL("./workers/tinypool.js", import.meta.url).href,
-	maxThreads: CONSTANTS.thread_count,
-});
-tppool.run = tppool.run.bind(tppool);
-const num = CONSTANTS.input;
+import { INPUT_SIZES } from "./_config.mjs";
 
-const results = await benchmark("tinypool")
-	.add("fasta", () => queueTasks(tppool.run, num))
-	.run();
+/** @type {Record<keyof typeof INPUT_SIZES, string>} */
+const workerFiles = {
+    fasta: "./workers/tinypool.js",
+    secp256k: "./workers/tinypool-secp256k.js",
+    pi: "./workers/tinypool-pi.js",
+};
 
-await tppool.destroy().then(() => {
-	process.send && process.send(JSON.stringify(results));
-	process.exit(0);
-});
+/** @type {(keyof typeof INPUT_SIZES)[]} */
+const workloads = ["fasta", "secp256k", "pi"];
+
+/** @type {Array<unknown>} */
+const results = [];
+
+async function run() {
+    for (const workload of workloads) {
+        await runWorkload(workload);
+    }
+
+    /** @param {keyof typeof INPUT_SIZES} workload */
+    async function runWorkload(workload) {
+        const NUM = INPUT_SIZES[workload];
+        const pool = new Tinypool({
+            filename: new URL(workerFiles[workload], import.meta.url).href,
+            minThreads: CONSTANTS.thread_count,
+            maxThreads: CONSTANTS.thread_count,
+        });
+        pool.run = pool.run.bind(pool);
+        try {
+            const summary = await benchmark(`tinypool:${workload}`)
+                .add(workload, () => queueTasks(() => pool.run(NUM)))
+                .run();
+
+            results.push(summary);
+        } finally {
+            await pool.destroy();
+        }
+    }
+
+    if (process.send) {
+        process.send(JSON.stringify(results));
+    }
+    process.exit(0);
+}
+
+await run();

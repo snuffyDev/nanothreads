@@ -1,3 +1,6 @@
+/**
+ * @param {number} num
+ */
 export const secp256k1 = function test(num) {
 	const CURVE = {
 		a: 0n,

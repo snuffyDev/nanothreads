@@ -1,25 +1,58 @@
-import { ThreadPool } from "../dist/index.mjs";
-import { parentPort } from "worker_threads";
-import { fileURLToPath } from "url";
+import { DynamicThreadPool } from "nanothreads";
 import { CONSTANTS, queueTasks } from "./_util.mjs";
-import { runAsyncBenchmark } from "./_bm.js";
-import { add, cycle, suite, complete } from "benny";
 import { benchmark } from "./utils/runner.mjs";
+import { resolve } from "path";
+import fasta from "./fasta.mjs";
+import { secp256k1 } from "./secp256k.mjs";
+import pi from "./pi.mjs";
+import { INPUT_SIZES } from "./_config.mjs";
+import { ThreadPool } from "nanothreads";
 
-const nt = new ThreadPool({
-	task: fileURLToPath(new URL("./workers/nanothreads.mjs", import.meta.url)),
-	count: CONSTANTS.thread_count,
-	maxConcurrency: CONSTANTS.max_concurrency,
-});
+/** @type {Record<keyof typeof INPUT_SIZES, string>} */
+const workerFiles = {
+    fasta: "./workers/nanothreads.mjs",
+    secp256k: "./workers/nanothreads-secp256k.mjs",
+    pi: "./workers/nanothreads-pi.mjs",
+};
 
+/** @type {(keyof typeof INPUT_SIZES)[]} */
+const workloads = ["fasta", "secp256k", "pi"];
 
-const num = CONSTANTS.input;
+/** @type {Array<unknown>} */
+const results = [];
 
-const result = await benchmark("nanothreads file")
-	.add("fasta", () => queueTasks(nt.exec, num))
-	.run();
+async function run() {
+    for (const workload of workloads) {
+        await runWorkload(workload);
+    }
 
-await nt.terminate().then(() => {
-	process.send && process.send(JSON.stringify(result));
-	process.exit(0);
-});
+    /** @param {keyof typeof INPUT_SIZES} workload */
+    async function runWorkload(workload) {
+        const NUM = INPUT_SIZES[workload];
+        const pool = new DynamicThreadPool({
+            task: resolve(".", workerFiles[workload]),
+            type: "module",
+            minThreads: 1,
+            maxThreads: CONSTANTS.thread_count,
+            idleTimeout: 5000,
+            maxConcurrency: CONSTANTS.max_concurrency,
+        });
+        pool.exec = pool.exec.bind(pool);
+        try {
+            const summary = await benchmark(`nanothreads:file:${workload}`)
+                .add(workload, () => queueTasks(pool.exec, NUM))
+                .run();
+
+            results.push(summary);
+        } finally {
+            await pool.terminate();
+        }
+    }
+
+    if (process.send) {
+        process.send(JSON.stringify(results));
+    }
+    process.exit(0);
+}
+
+await run();

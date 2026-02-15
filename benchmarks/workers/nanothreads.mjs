@@ -1,13 +1,15 @@
 import { workerInit } from "../../dist/index.mjs";
 import { parentPort } from "worker_threads";
 import fasta from "../fasta.mjs";
-import { secp256k1 } from "../secp256k.mjs";
-import { CONSTANTS } from "../_util.mjs";
 
+// FASTA-only worker for nanothreads Thread / ThreadPool benchmarks
 if (parentPort) {
 	workerInit(
 		parentPort,
-		/** @param {number} num */
-		async (num) => await CONSTANTS.func(num),
+		/** @param {number} input */
+		async (input) => {
+			return fasta(input);
+		}
 	);
 }
+

@@ -5,7 +5,7 @@
 		"url": "https://github.com/snuffyDev/nanothreads"
 	},
 	"license": "ISC",
-	"version": "0.3.9",
+	"version": "0.4.0",
 	"source": "./src/index.ts",
 	"description": "A tiny threading library, made for browsers and Node.",
 	"keywords": [
@@ -28,18 +28,18 @@
 		"dist",
 		"package.json"
 	],
-	"main": "./dist/index.cjs",
+	"type": "module",
 	"types": "./dist/index.d.ts",
-	"module": "./dist/index.mjs",
 	"browser": "./dist/browser/index.js",
+	"main": "./dist/index.mjs",
 	"scripts": {
-		"build": "rm -rf ./dist && node ./build.mjs && pnpm run build:dts",
-		"build:benchmark": "node ./build.mjs && pnpm run build:dts",
+		"build": "node ./build.mjs && pnpm run build:dts && pnpm test",
+		"build:benchmark": "node ./build-benchmarks.mjs && pnpm run build && pnpm run build:dts",
 		"build:demo": "tsc --moduleResolution node --target ESNext -m  esnext ./index.ts",
+		"build:test-web": "pnpm run build && rmdir /s /q .\\browser-test\\src\\dist && xcopy /s dist .\\browser-test\\src\\dist",
 		"build:dts": "tsc --moduleResolution node --target ESNext -m esnext --declaration true --emitDeclarationOnly --rootDir ./src/ --outDir dist",
 		"export": "node ./scripts/barrel.mjs",
-		"run:esm:node-demo": "node --loader=ts-node/esm --experimental-specifier-resolution=node ./index.mts",
-		"run:cjs:node-demo": "node ./index.cjs.js",
+		"bundle:benchmarks": "pnpm build && node ./build-benchmarks.mjs && node ./build-benchmarks.mjs && pnpm run build:dts",
 		"start": "pnpm run build && pnpm run run:esm:node-demo",
 		"format": "prettier --write .",
 		"test": "size-limit"
@@ -47,50 +47,54 @@
 	"sideEffects": false,
 	"exports": {
 		".": {
+			"types": "./dist/index.d.ts",
 			"node": {
-				"import": "./dist/index.cjs",
+				"import": "./dist/index.mjs",
 				"require": "./dist/index.cjs"
 			},
-			"browser": "./dist/browser/index.js",
-			"import": "./dist/index.mjs"
+			"browser": "./dist/browser/index.js"
 		},
 		"./package.json": "./package.json"
 	},
 	"size-limit": [
 		{
 			"name": "Node (ESM)",
-			"limit": "3 KB",
+			"limit": "4 KB",
 			"import": "*",
 			"path": "./dist/index.mjs"
 		},
 		{
 			"name": "Node (CJS)",
-			"limit": "3.5 KB",
+			"limit": "4.5 KB",
 			"import": "*",
 			"path": "./dist/index.cjs"
 		},
 		{
 			"name": "Web (ESM)",
-			"limit": "3 KB",
+			"limit": "4 KB",
 			"import": "*",
 			"path": "./dist/browser/index.js"
 		}
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"devDependencies": {
-		"@size-limit/esbuild": "^8.2.4",
-		"@size-limit/esbuild-why": "^8.2.4",
-		"@size-limit/file": "^8.2.4",
-		"@size-limit/preset-small-lib": "^8.2.4",
-		"@types/node": "^18.15.5",
-		"esbuild": "^0.17.12",
-		"esbuild-wasm": "^0.17.12",
-		"glob": "^9.3.1",
-		"prettier": "^2.8.6",
-		"size-limit": "^8.2.4",
-		"size-limit-node-esbuild": "^0.2.0",
-		"ts-node": "^10.9.1",
-		"tsup": "^6.7.0",
-		"typedoc": "^0.23.28",
-		"typescript": "^5.0.2"
+		"@size-limit/esbuild": "^12.0.0",
+		"@size-limit/esbuild-why": "^12.0.0",
+		"@size-limit/file": "^12.0.0",
+		"@size-limit/preset-small-lib": "^12.0.0",
+		"@types/node": "^25.2.3",
+		"esbuild": "^0.27.3",
+		"esbuild-wasm": "^0.27.3",
+		"glob": "^13.0.3",
+		"prettier": "^3.8.1",
+		"release-it": "^19.2.4",
+		"size-limit": "^12.0.0",
+		"size-limit-node-esbuild": "^0.4.0",
+		"ts-node": "^10.9.2",
+		"tsup": "^8.5.1",
+		"typedoc": "^0.28.17",
+		"typescript": "^5.9.3"
 	}
 }

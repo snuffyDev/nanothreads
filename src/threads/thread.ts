@@ -7,7 +7,6 @@ import { Queue } from "../sync/queue.js";
 import type { MessagePort as NodeMessagePort } from "node:worker_threads";
 import { PromisePool } from "../sync/promisePool.js";
 import { isMarkedTransferable, isTransferable } from "./transferable.js";
-import type { ThreadArgs } from "./pool.js";
 
 const TEMPLATE_NODE = `const{parentPort,workerData}=require("worker_threads"),func=($1),f=function(...e){return new Promise((r,j)=>{try{r(func.apply(func,e))}catch(e){j(e)}})};parentPort.on("message",e=>{const p=e.port;p.onmessage=async({data})=>{p.postMessage(await f(...data.data))}})`;
 
@@ -58,7 +57,10 @@ export abstract class AbstractThread<Args extends any[], Output> implements IThr
 		src: WorkerThreadFn<Args, Output>,
 		config: { maxConcurrency?: number | null; type?: "module" | undefined; once?: boolean; id?: number },
 	);
-	constructor(protected src: any, protected config: any) {
+	constructor(
+		protected src: any,
+		protected config: any,
+	) {
 		this.config = config;
 	}
 
@@ -87,16 +89,16 @@ export abstract class AbstractThread<Args extends any[], Output> implements IThr
 export class ThreadImpl<Args extends any[], Output> extends AbstractThread<Args, Output> {
 	private _activeCount = 0;
 
-	protected declare channel: MessagePort;
-	protected declare handle: InstanceType<typeof WorkerImpl>;
+	declare protected channel: MessagePort;
+	declare protected handle: InstanceType<typeof WorkerImpl>;
 	protected options: IWorkerOptions & { eval?: boolean | undefined } = {};
-	protected declare resolvers: Queue<{
+	declare protected resolvers: Queue<{
 		resolve: (value?: Output | PromiseLike<Output>) => void;
 		reject: (reason?: unknown) => void;
 	}>;
-	protected declare src: string | WorkerThreadFn<Args, Output>;
-	protected declare type: "inline" | "file" | "inline-blob";
-	private declare pool: PromisePool;
+	declare protected src: string | WorkerThreadFn<Args, Output>;
+	declare protected type: "inline" | "file" | "inline-blob";
+	declare private pool: PromisePool;
 	protected taskFactory: (...data: Args extends any[] ? Args : [...args: Args[]]) => Promise<Output>;
 
 	constructor(
@@ -120,9 +122,7 @@ export class ThreadImpl<Args extends any[], Output> extends AbstractThread<Args,
 		this.resolvers = new Queue();
 		this.config.maxConcurrency = config.maxConcurrency === null ? null : Math.max(1, this.config.maxConcurrency! ?? 1);
 
-		if (typeof this.config.maxConcurrency === "number") {
-			this.pool = new PromisePool(this.config.maxConcurrency);
-		}
+		this.pool = new PromisePool(this.config.maxConcurrency || 1);
 
 		switch (typeof src) {
 			case "function":
@@ -220,14 +220,28 @@ export class ThreadImpl<Args extends any[], Output> extends AbstractThread<Args,
 	};
 
 	private preparePayload(data: Args extends any[] ? Args : [...args: Args[]]) {
+		let hasTransferable = false;
+		for (let i = 0; i < data.length; i++) {
+			if (isMarkedTransferable(data[i])) {
+				hasTransferable = true;
+				break;
+			}
+		}
+
+		if (hasTransferable === false) {
+			return { payload: data, transferables: [] };
+		}
+
 		const payload: any[] = [];
 		const transferables: any[] = [];
-		for (const d of data) {
+
+		for (let i = 0; i < data.length; i++) {
+			const d = data[i];
 			if (isMarkedTransferable(d)) {
 				transferables.push(d.value);
-				payload.push(d.value);
+				payload[i] = d.value;
 			} else {
-				payload.push(d);
+				payload[i] = d;
 			}
 		}
 		return { payload, transferables };
@@ -235,7 +249,7 @@ export class ThreadImpl<Args extends any[], Output> extends AbstractThread<Args,
 
 	public send(...data: Args extends any[] ? Args : [...args: Args[]]): Promise<Output> {
 		this._activeCount++;
-		return this.pool.add<Output>(() => this.taskFactory.apply(this, data));
+		return this.pool.add(()=> this.taskFactory(...data));
 	}
 
 	public onMessage(callback: (data: Output) => void): () => void {

@@ -1,3 +1,4 @@
+const transferable = Symbol("__transferable");
 /**
 	Marks a transferable object as being able to be transferred between threads
 	*/
@@ -7,7 +8,6 @@ export interface ITransferable {
 
 	value: MarkedTransferable;
 }
-const transferable = Symbol("__transferable");
 
 type MarkedTransferable = Transferable & { __transferable: true };
 
@@ -28,7 +28,11 @@ const transferableConstructors: (new (...args: any[]) => any)[] = [
  * @internal
  */
 export const isMarkedTransferable = (value: unknown): value is ITransferable => {
-	if (value && typeof value === "object" && transferable in value) return true;
+	if (!value) return false;
+
+	if (typeof value === "object" && transferable in value) {
+		return true;
+	}
 	return false;
 };
 
@@ -64,13 +68,13 @@ export const isTransferable = (value: unknown): value is Transferable => {
  * @param {unknown} value
  * @returns
  * @throws {Error} Value is not transferable
- * 
+ *
  * @example
  * const transferable = createTransferable(new ArrayBuffer(10));
- * 
+ *
  * // transferable is now marked as transferable
  * thread.send(transferable);
- * 
+ *
  */
 export const createTransferable = (value: unknown): ITransferable => {
 	if (isTransferable(value)) {

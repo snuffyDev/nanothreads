@@ -15,7 +15,7 @@ import type { WorkerThreadFn } from "../models/thread.js";
  * @see {@link Thread} to see how to create the worker thread
  *
  */
-export const workerInit = <Args extends [...args: unknown[]] | any, Output>(
+export const workerInit = <Args extends unknown[], Output>(
 	target: DedicatedWorkerGlobalScope["self"] | import("node:worker_threads").MessagePort,
 	func: WorkerThreadFn<Args, Output>,
 	maxConcurrent: number = 1,

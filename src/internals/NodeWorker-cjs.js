@@ -7,10 +7,13 @@ export class Worker extends _Worker {
 	constructor(src, opts = {}) {
 		super(src, opts);
 
+		//@ts-ignore-next-line
 		this.off = this.off.bind(this);
+		//@ts-ignore-next-line
 		this.on = this.on.bind(this);
 		this.on("message", this.onmessage);
 	}
+		//@ts-ignore-next-line
 	onmessage(e) {}
 	terminate() {
 		return super.terminate();
@@ -21,6 +24,7 @@ export class Worker extends _Worker {
 	 * @param {any} cb
 	 */
 	once(event, cb) {
+		//@ts-ignore-next-line
 		super.once(event, cb);
 		return this;
 	}

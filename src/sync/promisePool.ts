@@ -20,25 +20,55 @@ import { Queue } from ".";
  * ```
  */
 export class PromisePool {
-	private pendingTasks: Queue<() => Promise<any>> = new Queue();
+	private pendingTasks: Queue<{
+		task: () => Promise<any>;
+		resolve: (value: any) => void;
+		reject: (reason?: any) => void;
+	}> = new Queue();
 	private activeTasks: number = 0;
+	private drainScheduled = false;
 
 	constructor(private readonly concurrency: number) {}
 
-	private async runTask(task: () => Promise<any>): Promise<void> {
+	private async runTask({
+		task,
+		resolve,
+		reject,
+	}: {
+		task: () => Promise<any>;
+		resolve: (value: any) => void;
+		reject: (reason?: any) => void;
+	}): Promise<void> {
 		this.activeTasks++;
 		try {
-			await task();
+			const result = await task();
+
+			resolve(result);
+		} catch (error) {
+			reject(error);
+			this.scheduleDrain();
 		} finally {
 			this.activeTasks--;
-			this.runNext();
+			this.scheduleDrain();
 		}
 	}
 
-	private runNext(): void {
-		if (this.activeTasks < this.concurrency && this.pendingTasks.length > 0) {
+	private scheduleDrain(): void {
+		if (this.drainScheduled) {
+			return;
+		}
+		this.drainScheduled = true;
+		queueMicrotask(() => {
+			this.drainScheduled = false;
+			this.drain();
+		});
+	}
+
+	private drain(): void {
+		// Fill available slots
+		while (this.activeTasks < this.concurrency && this.pendingTasks.length > 0) {
 			const nextTask = this.pendingTasks.shift()!;
-			this.runTask(nextTask);
+			this.runTask(nextTask); // Queue microtask to start the tasks at once
 		}
 	}
 
@@ -48,12 +78,8 @@ export class PromisePool {
 	 */
 	add<T>(task: () => Promise<T>): Promise<T> {
 		return new Promise((resolve, reject) => {
-			this.pendingTasks.push(() =>
-				task()
-					.then((result) => resolve(result))
-					.catch((error) => reject(error)),
-			);
-			this.runNext();
+			this.pendingTasks.push({ task, resolve, reject });
+			this.scheduleDrain();
 		});
 	}
 }
